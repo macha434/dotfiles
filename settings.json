@@ -61,7 +61,8 @@
     "workbench.editor.tabSizing": "shrink",
     "workbench.editor.enablePreviewFromQuickOpen": false,
     "workbench.editor.useModal": "off",
-    "workbench.editor.closeEmptyGroups": false,
+    // グループ内の最後のタブを閉じたら、その分割自体を畳む
+    "workbench.editor.closeEmptyGroups": true,
     "workbench.list.smoothScrolling": true,
     "workbench.secondarySideBar.defaultVisibility": "hidden",
 
