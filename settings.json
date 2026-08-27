@@ -2,26 +2,21 @@
     // ===== プライバシー / テレメトリ（送信しない） =====
     "telemetry.telemetryLevel": "off",
     "workbench.enableExperiments": false,
-
     // ===== セキュリティ（ワークスペースの信頼） =====
     "security.workspace.trust.untrustedFiles": "prompt",
-
     // ===== ファイルの保存 =====
     "files.autoSave": "onFocusChange",
     "files.trimTrailingWhitespace": true,
-
     // ===== エディタ: フォント =====
     "editor.fontFamily": "'JetBrains Mono', 'Fira Code', Consolas, monospace",
     "editor.fontLigatures": true,
     "editor.fontSize": 14,
     "editor.lineHeight": 1.6,
-
     // ===== エディタ: カーソル / 複数選択 =====
     "editor.cursorStyle": "underline-thin",
     "editor.cursorBlinking": "smooth",
     "editor.cursorSmoothCaretAnimation": "on",
     "editor.multiCursorModifier": "ctrlCmd",
-
     // ===== エディタ: 表示（不可視文字・折り返し・余計な UI を減らす） =====
     "editor.renderWhitespace": "trailing",
     "editor.renderControlCharacters": true,
@@ -30,21 +25,17 @@
     "editor.smoothScrolling": true,
     "editor.hover.above": false,
     "breadcrumbs.enabled": true,
-
     // ===== エディタ: 補完・サジェスト =====
     "editor.snippetSuggestions": "inline",
     "editor.tabCompletion": "off",
-
     // ===== エディタ: 自動フォーマット =====
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
     "editor.formatOnType": true,
-
     // ===== 差分表示 =====
     "diffEditor.codeLens": true,
     "diffEditor.renderSideBySide": true,
     "diffEditor.wordWrap": "on",
-
     // ===== ウィンドウ / UI レイアウト =====
     "window.titleBarStyle": "custom",
     "window.menuBarVisibility": "compact",
@@ -57,20 +48,16 @@
     "workbench.editor.closeEmptyGroups": false,
     "workbench.list.smoothScrolling": true,
     "workbench.secondarySideBar.defaultVisibility": "hidden",
-
     // ===== コマンドパレット =====
     "workbench.commandPalette.history": 1000,
     "workbench.commandPalette.preserveInput": true,
-
     // ===== 検索 =====
     "search.exclude": {
         "**/node_modules/**": true
     },
-
     // ===== エクスプローラー（確認ダイアログを省略） =====
     "explorer.confirmDelete": false,
     "explorer.confirmDragAndDrop": false,
-
     // ===== Git / ソース管理 =====
     "git.autofetch": true,
     "git.confirmSync": true,
@@ -79,16 +66,6 @@
     "git.ignoreRebaseWarning": true,
     "git.openRepositoryInParentFolders": "always",
     "scm.defaultViewMode": "tree",
-
-    // ===== 言語ツール（TypeScript / ESLint） =====
-    "eslint.validate": [
-        "javascript",
-        "typescript",
-        "typescriptreact",
-        "javascriptreact"
-    ],
-    "typescript.updateImportsOnFileMove.enabled": "always",
-
     // ===== Notebook / Markdown =====
     "workbench.editorAssociations": {
         "*.ipynb": "jupyter-notebook"
@@ -98,17 +75,14 @@
         "jupyter-notebook": "left"
     },
     "markdown.preview.breaks": true,
-
     // ===== AI / チャット =====
     "github.copilot.nextEditSuggestions.enabled": true,
     "claudeCode.preferredLocation": "panel",
     "chat.mcp.gallery.enabled": true,
     "chat.viewSessions.orientation": "stacked",
-
     // ===== 拡張機能 / リモート開発 =====
     "extensions.autoUpdate": "on",
     "dev.containers.executeInWSL": true,
-
     // ===== Vim: キーマップ =====
     "vim.insertModeKeyBindings": [
         {
@@ -272,7 +246,6 @@
             ]
         }
     ],
-
     // ===== Vim: 動作・プラグイン =====
     "vim.useSystemClipboard": true,
     "vim.useCtrlKeys": true,
@@ -281,16 +254,13 @@
     "vim.easymotion": true,
     "vim.camelCaseMotion.enable": true,
     "vim.visualstar": true,
-
     // ===== Vim: 検索 =====
     "vim.hlsearch": true,
     "vim.ignorecase": true,
     "vim.incsearch": true,
-
     // ===== Vim: 表示（モードごとの statusbar 色） =====
     "vim.highlightedyank.enable": true,
     "vim.statusBarColorControl": true,
-
     // ===== 通知音・アナウンス（すべて無効） =====
     "accessibility.signals.chatRequestSent": {
         "sound": "off",
