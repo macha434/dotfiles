@@ -10,11 +10,30 @@
 //         新しく追加するときも排他性を崩さないこと。
 [
     // ========================================================================
-    // Git (prefix: ctrl+g)
+    // Git / SCM (prefix: ctrl+g)
+    //   どこからでも使えるリポジトリ単位の操作。
+    //   stage / unstage / commit は誤爆を避けるため SCM ビュー内の
+    //   1 文字キー (次のセクション) に集約している。
     // ========================================================================
     {
+        // SCM ビューを開いて、変更リストの 1 件目にカーソルを置き、
+        // その差分をプレビューまで開く。
+        //   workbench.view.scm             ... ビューを開く (初回は入力欄にフォーカス)
+        //   focusNextResourceGroup         ... グループ行へ = ツリーに domFocus()
+        //   list.focusDown                 ... グループ行の 1 つ下 = 最初の変更
+        //   list.selectAndPreserveFocus    ... 差分をプレビュー
+        // ここでプレビューを開いておかないと、リストに降りた直後の 1 件目に
+        // 対して a / u / d が「直前に開いていたファイル」に効いてしまう。
         "key": "ctrl+g a",
-        "command": "workbench.view.scm",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "workbench.view.scm",
+                "workbench.scm.action.focusNextResourceGroup",
+                "list.focusDown",
+                "list.selectAndPreserveFocus"
+            ]
+        },
         "when": "workbench.scm.active"
     },
     {
@@ -22,16 +41,164 @@
         "command": "git.checkout"
     },
     {
+        "key": "ctrl+g f",
+        "command": "git.fetch"
+    },
+
+    // ---- push / pull ----
+    {
+        "key": "ctrl+g p",
+        "command": "git.push"
+    },
+    {
+        "key": "ctrl+g shift+p",
+        "command": "git.pull"
+    },
+    {
+        "key": "ctrl+g y",
+        "command": "git.sync"
+    },
+
+    // ---- stash (s = stash / shift+s = pop) ----
+    {
+        "key": "ctrl+g s",
+        "command": "git.stash"
+    },
+    {
+        "key": "ctrl+g shift+s",
+        "command": "git.stashPopLatest"
+    },
+
+    // ---- 差分 ----
+    {
         "key": "ctrl+g d",
         "command": "git.openChange"
     },
     {
-        // 注: when が「SCM ビューが開いている間ずっと」なので、
-        //     通常のファイル編集中にも発火する。気になったら要調整。
-        "key": "ctrl+g u",
-        "command": "git.unstage",
-        "when": "editorFocus && sideBarVisible && activeViewlet == 'workbench.view.scm'"
+        // エディタ内で変更箇所を上下に移動 (既定の alt+f3 / shift+alt+f3 相当)
+        "key": "ctrl+g j",
+        "command": "workbench.action.editor.nextChange",
+        "when": "editorTextFocus"
     },
+    {
+        "key": "ctrl+g k",
+        "command": "workbench.action.editor.previousChange",
+        "when": "editorTextFocus"
+    },
+
+    // ========================================================================
+    // SCM ビュー内の 1 文字キー (vim 風)
+    //   変更リストにフォーカスがある時だけ有効。listFocus && !inputFocus に
+    //   よってコミットメッセージ入力欄では通常の文字入力のままになる。
+    //   エクスプローラの 1 文字キーとは when が排他なので衝突しない。
+    // ========================================================================
+    // ---- カーソル移動と同時に差分をプレビューする ----
+    // git.stage / unstage / clean は引数無しだと「アクティブなエディタの
+    // ファイル」を対象にする。そこで移動のたびにカーソル位置の差分を
+    // (フォーカスは移さずに) 開いておき、a / u / d がカーソル位置に
+    // 効いているように見せている。開く処理は非同期なので、stage と同時に
+    // 開こうとすると間に合わない (移動時に開いておけば十分な間が空く)。
+    {
+        "key": "j",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "list.focusDown",
+                "list.selectAndPreserveFocus"
+            ]
+        },
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "down",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "list.focusDown",
+                "list.selectAndPreserveFocus"
+            ]
+        },
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "k",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "list.focusUp",
+                "list.selectAndPreserveFocus"
+            ]
+        },
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "up",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "list.focusUp",
+                "list.selectAndPreserveFocus"
+            ]
+        },
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "a",
+        "command": "git.stage",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "shift+a",
+        "command": "git.stageAll",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        // 注: 同じファイルに staged と unstaged の両方の変更がある場合、
+        //     getSCMResource() は working tree 側を先に返すため何も起きない
+        //     (git.unstage は index グループのリソースしか受け付けない)。
+        "key": "u",
+        "command": "git.unstage",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "shift+u",
+        "command": "git.unstageAll",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        // 変更を破棄。ctrl+g 側には置かず、リスト上でのみ実行できるようにしている。
+        // git.clean は必ずモーダル確認が出る。
+        "key": "d",
+        "command": "git.clean",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        // コミットメッセージ入力欄へフォーカス (入力後 ctrl+enter = scm.acceptInput でコミット)
+        "key": "c",
+        "command": "workbench.scm.action.focusNextInput",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        // コミット入力欄から変更リストへ戻る。
+        // focusResourceGroup() が最初のグループ行に setFocus した上で
+        // tree.domFocus() を呼ぶので、確実に入力欄から抜けられる。
+        // 着地するのはグループの見出し行なので、そこから j で変更に降りる。
+        // (workbench.scm.focus は動かなかった)
+        "key": "escape",
+        "command": "workbench.scm.action.focusNextResourceGroup",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && inputFocus"
+    },
+    {
+        "key": "s",
+        "command": "git.stash",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+    {
+        "key": "shift+s",
+        "command": "git.stashPopLatest",
+        "when": "sideBarFocus && activeViewlet == 'workbench.view.scm' && listFocus && !inputFocus"
+    },
+
     // ========================================================================
     // ターミナル (prefix: ctrl+a)
     //   エディタ領域のターミナル (terminalEditorFocus) は
@@ -76,6 +243,7 @@
         "command": "workbench.action.terminal.kill",
         "when": "terminalFocus"
     },
+
     // ========================================================================
     // エディタグループ (prefix: ctrl+a)
     //   h / l の when はターミナル側の完全な補集合になっている
@@ -108,6 +276,7 @@
         "command": "workbench.action.moveEditorToNextGroup",
         "when": "!panelFocus"
     },
+
     // ========================================================================
     // パネル (prefix: ctrl+a)
     //   j / k は意図的に同じ挙動 (押しやすい方で開閉・フォーカスできる)
@@ -138,6 +307,7 @@
         "command": "workbench.action.toggleMaximizedPanel",
         "when": "panelFocus"
     },
+
     // ========================================================================
     // サイドバー (prefix: ctrl+d)
     // ========================================================================
@@ -179,12 +349,14 @@
         "when": "sideBarFocus"
     },
     {
-        // 入力中 (リネーム / コミットメッセージ / 絞り込み) の Esc は
-        //  本来のキャンセル動作に譲る
+        // サイドバーを閉じる。入力中 (リネーム / 絞り込み / コミットメッセージ) は
+        // 本来のキャンセル動作に譲る。SCM のコミット入力欄については
+        // Git / SCM セクションの escape が先に受けて、変更リストへ戻る。
         "key": "escape",
         "command": "workbench.action.closeSidebar",
         "when": "sideBarFocus && !inputFocus"
     },
+
     // ========================================================================
     // エクスプローラ内の 1 文字キー (vim 風)
     //   すべて filesExplorerFocus && foldersViewVisible && !inputFocus で統一
@@ -230,6 +402,7 @@
         "command": "deleteFile",
         "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
     },
+
     // ========================================================================
     // リスト / ウィジェットの上下移動 (ctrl+j / ctrl+k)
     //   サイドバーのビュー切り替えより後ろに置いて、
@@ -255,6 +428,7 @@
         "command": "selectPrevSuggestion",
         "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
     },
+
     // ========================================================================
     // その他 / 既定キーバインドの解除
     // ========================================================================
