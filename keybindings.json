@@ -396,12 +396,16 @@
         "when": "sideBarFocus"
     },
     {
-        // サイドバーを閉じる。入力中 (リネーム / 絞り込み / コミットメッセージ) は
-        // 本来のキャンセル動作に譲る。SCM のコミット入力欄については
-        // Git / SCM セクションの escape が先に受けて、変更リストへ戻る。
+        // サイドバーを閉じる。ツリーを見ている時だけに限定する。
+        // エクスプローラでファイル名を入力している間は inputFocus が立たない
+        // (1 文字キーが誤爆しないのは filesExplorerFocus が false になるおかげ)
+        // ため、!inputFocus だけではリネームや新規作成の Esc を奪ってしまう。
+        // listFocus は同じツリーのフォーカス状態を見るので、入力中は false になる。
+        // SCM のコミット入力欄については Git / SCM セクションの escape が
+        // 先に受けて、変更リストへ戻る。
         "key": "escape",
         "command": "workbench.action.closeSidebar",
-        "when": "sideBarFocus && !inputFocus"
+        "when": "sideBarFocus && listFocus && !inputFocus"
     },
 
     // ========================================================================
