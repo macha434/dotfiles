@@ -337,6 +337,19 @@
         "when": "!panelFocus && panelVisible"
     },
     {
+        // パネルのビューを巡回する (問題 / 出力 / デバッグコンソール / ターミナル /
+        // 拡張機能のパネルなど)。when はエディタグループ側の shift+h / shift+l
+        // (エディタをグループ間で移動) の完全な補集合。
+        "key": "ctrl+a shift+h",
+        "command": "workbench.action.previousPanelView",
+        "when": "panelFocus"
+    },
+    {
+        "key": "ctrl+a shift+l",
+        "command": "workbench.action.nextPanelView",
+        "when": "panelFocus"
+    },
+    {
         "key": "ctrl+a m",
         "command": "workbench.action.toggleMaximizedPanel",
         "when": "panelFocus"
