@@ -201,14 +201,34 @@
 
     // ========================================================================
     // ターミナル (prefix: ctrl+a)
-    //   エディタ領域のターミナル (terminalEditorFocus) は
-    //   「エディタグループ」側の操作対象なのでここでは除外する
+    //   ターミナルはパネルとエディタ領域の両方に置ける。
+    //   terminal.focusNext / focusPrevious は terminalGroupService (= パネルの
+    //   グループ) を操作するコマンドなので、エディタ領域から押すとパネルに
+    //   飛んでしまう。そのためパネルのターミナルに限定し、エディタ領域側の
+    //   shift+j / shift+k は「エディタグループ」セクションが受け持つ。
     // ========================================================================
     {
-        // 新規ターミナル
+        // 新規ターミナル (パネル)
         "key": "ctrl+a -",
         "command": "workbench.action.terminal.new",
         "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+    },
+    {
+        // 新規ターミナル (エディタ領域)
+        "key": "ctrl+a shift+-",
+        "command": "workbench.action.createTerminalEditor",
+        "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+    },
+    {
+        // 今いるターミナルをパネル <-> エディタ領域 で移動する
+        "key": "ctrl+a e",
+        "command": "workbench.action.terminal.moveToEditor",
+        "when": "terminalFocus && !terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a e",
+        "command": "workbench.action.terminal.moveToTerminalPanel",
+        "when": "terminalEditorFocus"
     },
     {
         // ペイン分割
@@ -275,6 +295,20 @@
         "key": "ctrl+a shift+l",
         "command": "workbench.action.moveEditorToNextGroup",
         "when": "!panelFocus"
+    },
+    {
+        // グループ内のタブを並び順で行き来する (使用履歴順ではない)。
+        // グループ間の移動は h / l が受け持つので InGroup 版を使う。
+        // when はパネルのターミナル (shift+j / shift+k がターミナル間移動に
+        // 使われる) の完全な補集合。
+        "key": "ctrl+a shift+j",
+        "command": "workbench.action.nextEditorInGroup",
+        "when": "!terminalFocus || terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a shift+k",
+        "command": "workbench.action.previousEditorInGroup",
+        "when": "!terminalFocus || terminalEditorFocus"
     },
 
     // ========================================================================
