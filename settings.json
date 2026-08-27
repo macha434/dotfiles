@@ -55,8 +55,9 @@
     "search.exclude": {
         "**/node_modules/**": true
     },
-    // ===== エクスプローラー（確認ダイアログを省略） =====
-    "explorer.confirmDelete": false,
+    // ===== エクスプローラー =====
+    // 削除は keybindings.json で 1 打鍵の "d" に割り当てているため確認を出す
+    "explorer.confirmDelete": true,
     "explorer.confirmDragAndDrop": false,
     // ===== Git / ソース管理 =====
     "git.autofetch": true,
