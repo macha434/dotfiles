@@ -1,0 +1,289 @@
+// 既定値を上書きするには、このファイル内にキー バインドを挿入します
+//
+// 【プレフィックス】
+//   ctrl+a ... ターミナル / エディタグループ / パネル (tmux 風)
+//   ctrl+d ... サイドバー
+//   ctrl+g ... Git
+//
+// 【注意】同じキーに複数のルールがある場合、ファイルの「後ろ」にあるものが優先される。
+//         各グループ内のルールは when 句が排他になるように書いてあるので、
+//         新しく追加するときも排他性を崩さないこと。
+[
+    // ========================================================================
+    // Git (prefix: ctrl+g)
+    // ========================================================================
+    {
+        "key": "ctrl+g a",
+        "command": "workbench.view.scm",
+        "when": "workbench.scm.active"
+    },
+    {
+        "key": "ctrl+g b",
+        "command": "git.checkout"
+    },
+    {
+        "key": "ctrl+g d",
+        "command": "git.openChange"
+    },
+    {
+        // 注: when が「SCM ビューが開いている間ずっと」なので、
+        //     通常のファイル編集中にも発火する。気になったら要調整。
+        "key": "ctrl+g u",
+        "command": "git.unstage",
+        "when": "editorFocus && sideBarVisible && activeViewlet == 'workbench.view.scm'"
+    },
+    // ========================================================================
+    // ターミナル (prefix: ctrl+a)
+    //   エディタ領域のターミナル (terminalEditorFocus) は
+    //   「エディタグループ」側の操作対象なのでここでは除外する
+    // ========================================================================
+    {
+        // 新規ターミナル
+        "key": "ctrl+a -",
+        "command": "workbench.action.terminal.new",
+        "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+    },
+    {
+        // ペイン分割
+        "key": "ctrl+a shift+\\",
+        "command": "workbench.action.terminal.splitInActiveWorkspace",
+        "when": "terminalFocus"
+    },
+    {
+        // ペイン間移動 h / l
+        "key": "ctrl+a h",
+        "command": "workbench.action.terminal.focusPreviousPane",
+        "when": "terminalFocus && !terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a l",
+        "command": "workbench.action.terminal.focusNextPane",
+        "when": "terminalFocus && !terminalEditorFocus"
+    },
+    {
+        // ターミナル間移動 shift+j / shift+k
+        "key": "ctrl+a shift+k",
+        "command": "workbench.action.terminal.focusPrevious",
+        "when": "terminalFocus && !terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a shift+j",
+        "command": "workbench.action.terminal.focusNext",
+        "when": "terminalFocus && !terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a x",
+        "command": "workbench.action.terminal.kill",
+        "when": "terminalFocus"
+    },
+    // ========================================================================
+    // エディタグループ (prefix: ctrl+a)
+    //   h / l の when はターミナル側の完全な補集合になっている
+    // ========================================================================
+    {
+        // グループ分割
+        "key": "ctrl+a shift+\\",
+        "command": "workbench.action.splitEditorRight",
+        "when": "editorFocus"
+    },
+    {
+        // フォーカス移動 h / l
+        "key": "ctrl+a h",
+        "command": "workbench.action.focusPreviousGroup",
+        "when": "!terminalFocus || terminalEditorFocus"
+    },
+    {
+        "key": "ctrl+a l",
+        "command": "workbench.action.focusNextGroup",
+        "when": "!terminalFocus || terminalEditorFocus"
+    },
+    {
+        // エディタ自体を隣のグループへ移動 shift+h / shift+l
+        "key": "ctrl+a shift+h",
+        "command": "workbench.action.moveEditorToPreviousGroup",
+        "when": "!panelFocus"
+    },
+    {
+        "key": "ctrl+a shift+l",
+        "command": "workbench.action.moveEditorToNextGroup",
+        "when": "!panelFocus"
+    },
+    // ========================================================================
+    // パネル (prefix: ctrl+a)
+    //   j / k は意図的に同じ挙動 (押しやすい方で開閉・フォーカスできる)
+    //   非表示 or フォーカス中 -> トグル / 表示中かつ未フォーカス -> フォーカス
+    // ========================================================================
+    {
+        "key": "ctrl+a j",
+        "command": "workbench.action.togglePanel",
+        "when": "!panelVisible || panelFocus"
+    },
+    {
+        "key": "ctrl+a k",
+        "command": "workbench.action.togglePanel",
+        "when": "!panelVisible || panelFocus"
+    },
+    {
+        "key": "ctrl+a j",
+        "command": "workbench.action.focusPanel",
+        "when": "!panelFocus && panelVisible"
+    },
+    {
+        "key": "ctrl+a k",
+        "command": "workbench.action.focusPanel",
+        "when": "!panelFocus && panelVisible"
+    },
+    {
+        "key": "ctrl+a m",
+        "command": "workbench.action.toggleMaximizedPanel",
+        "when": "panelFocus"
+    },
+    // ========================================================================
+    // サイドバー (prefix: ctrl+d)
+    // ========================================================================
+    {
+        "key": "ctrl+d f",
+        "command": "workbench.view.explorer",
+        "when": "viewContainer.workbench.view.explorer.enabled"
+    },
+    {
+        // s / b はサイドバーとエディタを行き来するトグル
+        "key": "ctrl+d s",
+        "command": "workbench.action.focusSideBar",
+        "when": "!sideBarFocus"
+    },
+    {
+        "key": "ctrl+d s",
+        "command": "workbench.action.focusFirstEditorGroup",
+        "when": "sideBarFocus"
+    },
+    {
+        "key": "ctrl+d b",
+        "command": "workbench.files.action.focusOpenEditorsView",
+        "when": "!sideBarFocus"
+    },
+    {
+        "key": "ctrl+d b",
+        "command": "workbench.view.explorer",
+        "when": "sideBarFocus"
+    },
+    {
+        // ビュー切り替え j / k
+        "key": "ctrl+j",
+        "command": "workbench.action.nextSideBarView",
+        "when": "sideBarFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.action.previousSideBarView",
+        "when": "sideBarFocus"
+    },
+    {
+        // 入力中 (リネーム / コミットメッセージ / 絞り込み) の Esc は
+        //  本来のキャンセル動作に譲る
+        "key": "escape",
+        "command": "workbench.action.closeSidebar",
+        "when": "sideBarFocus && !inputFocus"
+    },
+    // ========================================================================
+    // エクスプローラ内の 1 文字キー (vim 風)
+    //   すべて filesExplorerFocus && foldersViewVisible && !inputFocus で統一
+    // ========================================================================
+    {
+        "key": "n",
+        "command": "explorer.newFile",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
+    {
+        "key": "f",
+        "command": "explorer.newFolder",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
+    {
+        "key": "h",
+        "command": "previousCompressedFolder",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
+    {
+        "key": "l",
+        "command": "nextCompressedFolder",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
+    {
+        "key": "r",
+        "command": "renameFile",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "y",
+        "command": "filesExplorer.copy",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !inputFocus"
+    },
+    {
+        "key": "p",
+        "command": "filesExplorer.paste",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        // 1 打鍵で消えてしまわないよう settings.json で explorer.confirmDelete: true にしてある
+        "key": "d",
+        "command": "deleteFile",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
+    // ========================================================================
+    // リスト / ウィジェットの上下移動 (ctrl+j / ctrl+k)
+    //   サイドバーのビュー切り替えより後ろに置いて、
+    //   入力中のウィジェット操作を優先させる
+    // ========================================================================
+    {
+        "key": "ctrl+j",
+        "command": "quickInput.next",
+        "when": "inQuickInput && quickInputType == 'quickPick'"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "quickInput.previous",
+        "when": "inQuickInput && quickInputType == 'quickPick'"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "selectNextSuggestion",
+        "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "selectPrevSuggestion",
+        "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
+    },
+    // ========================================================================
+    // その他 / 既定キーバインドの解除
+    // ========================================================================
+    {
+        // ctrl+a はプレフィックスにしたので、全選択は 2 打鍵に
+        "key": "ctrl+a ctrl+a",
+        "command": "editor.action.selectAll"
+    },
+    {
+        "key": "ctrl+a",
+        "command": "-editor.action.selectAll"
+    },
+    {
+        // 副サイドバー (Claude など) のトグル
+        "key": "ctrl+l",
+        "command": "workbench.action.toggleAuxiliaryBar"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "-expandLineSelection",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "-workbench.action.chat.newChat",
+        "when": "chatIsEnabled && inChat && chatLocation == 'panel'"
+    },
+    {
+        "key": "ctrl+alt+b",
+        "command": "-workbench.action.toggleAuxiliaryBar"
+    }
+]
