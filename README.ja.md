@@ -21,7 +21,7 @@
 ## 技術スタック
 
 - 言語: Bash
-- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）
+- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`statusline-command.sh`）
 
 ## セットアップ
 
@@ -82,7 +82,8 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 | `install.sh` | エントリポイント。引数を解釈し、各 `install.d/*.sh` を副シェルで実行する |
 | `lib/common.sh` | OS 判別、Windows のパス解決、`install_file`、ログ出力 |
 | `install.d/<名前>.sh` | ツール1つ分の配置手順。ファイル名がコマンドラインで指定できる名前になる |
-| `vscode/` | 設定ファイルの実体 |
+| `vscode/` | VS Code の設定ファイルの実体 |
+| `claude/` | Claude Code の設定ファイルの実体。ステータスラインのスクリプトを含む |
 | `features/` | GHCR に publish する devcontainer feature とそのテスト。`install.sh` は関知しない |
 | `docs/` | 設計メモと実装プラン |
 

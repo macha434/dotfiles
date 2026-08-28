@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`statusline-command.sh`)
 
 ## Setup
 
@@ -82,7 +82,8 @@ Layout:
 | `install.sh` | Entry point. Parses arguments and runs each `install.d/*.sh` in a subshell |
 | `lib/common.sh` | OS detection, Windows path resolution, `install_file`, logging |
 | `install.d/<name>.sh` | Installs one tool. The file name is the name accepted on the command line |
-| `vscode/` | The files themselves |
+| `vscode/` | VS Code's files themselves |
+| `claude/` | Claude Code's files themselves, including the status line script |
 | `features/` | Dev container features published to GHCR, with their tests. Not touched by `install.sh` |
 | `docs/` | Design notes and implementation plans |
 

@@ -21,6 +21,10 @@ jobs:
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
 
+      # statusline は claude/ が正。tarball に入るよう feature 側へ複製する
+      - name: Sync feature assets
+        run: ./features/sync-assets.sh
+
       # --features で絞らないので features/test/ 配下の全 feature が対象になる。
       # feature を増やしたときに、ここを直し忘れて未テストのまま publish される
       # のを防ぐため、あえて列挙しない。
@@ -45,6 +49,9 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Sync feature assets
+        run: ./features/sync-assets.sh
 
       # features/src/<id>/ を ghcr.io/<owner>/<repo>/<id> として publish する。
       # 既に存在するバージョンはスキップされるので、version を上げない限り無害。

@@ -72,7 +72,15 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 
 ## ステータスライン
 
-`statusline/claude.sh` を `/usr/local/share/macha-features/claude-statusline.sh` に配置し、
+スクリプトの正は**リポジトリルートの [`claude/statusline-command.sh`](../../../claude/) 側**で、
+dotfiles として `install.sh` がホストの `~/.claude/` にも配置する。feature 用のコピーは
+`features/sync-assets.sh` が生成する（gitignore 済み）。
+
+feature の tarball には feature ディレクトリ配下しか入らず、しかも packaging は symlink を
+symlink のまま tar に入れる。リポジトリ内 symlink で共有すると公開された feature が宙を指す
+リンクを抱えるので、実体のコピーが要る。同期を忘れるとビルド時に落ちる。
+
+そのコピーを `/usr/local/share/macha-features/claude-statusline.sh` に配置し、
 `~/.claude/settings.json` の `statusLine` がそこを指すようにする。
 
 スクリプト本体を volume の外に置いているのが要点。volume に置くと更新が 2 回目以降の
@@ -82,7 +90,8 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 設定は `jq` で `statusLine` キーだけマージする。コンテナ内で自分が足した他の設定は壊れない。
 `jq` が無い環境では、`settings.json` が存在しないときだけ書く。
 
-表示を変えたいときは `statusline/claude.sh` を編集して `version` を上げる。
+表示を変えたいときは `claude/statusline-command.sh` を編集して `version` を上げる。
+ホスト側は `./install.sh claude` で反映される。
 
 Codex には Claude Code の `statusLine` に相当する仕組みが見当たらないため、Codex 側の
 ステータスライン設定は行っていない。

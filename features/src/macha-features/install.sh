@@ -21,6 +21,14 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # option が決めるのは CLI を入れるかどうかと statusline を当てるかどうかだけ。
 AGENTS=(claude codex)
 
+# statusline スクリプトは dotfiles 本体 (claude/) が正で、features/sync-assets.sh が
+# ここへ複製する。tarball には feature 配下しか入らないため実体のコピーが要る。
+if [ ! -f "$SRC/statusline/claude.sh" ]; then
+    echo "macha-features: statusline/claude.sh が無い。features/sync-assets.sh を先に実行すること" >&2
+    exit 1
+fi
+
+
 echo "macha-features: $STATE を用意する (user=$USERNAME)"
 
 install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE"

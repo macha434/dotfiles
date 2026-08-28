@@ -108,7 +108,8 @@ features/
 | `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink。Claude Code CLI。entrypoint と statusline の配置 |
 | `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。`statusLine` 設定のマージ |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
-| `src/macha-features/statusline/claude.sh` | — | ステータスラインの本体。イメージ側に配置される |
+| `src/macha-features/statusline/claude.sh` | — | ステータスラインの本体。`claude/statusline-command.sh` からの生成物 |
+| `features/sync-assets.sh` | 手動 / CI | 上記を `claude/` から複製する |
 
 ### なぜ 3 つに分かれるか
 
@@ -119,6 +120,12 @@ features/
 volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか届かない。
 スクリプト本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
 settings.json 側は不変なパスを指すだけでよく、陳腐化しない。
+
+**リポジトリルートから複製しないといけないもの**: statusline スクリプト。dotfiles として
+ホストにも配置したいので正は `claude/statusline-command.sh` に置くが、feature の tarball には
+feature ディレクトリ配下しか入らない。しかも packaging は symlink を symlink のまま tar に
+入れる（実測で確認）ので、リポジトリ内 symlink で共有すると公開された feature が宙を指す
+リンクを抱える。そのため `features/sync-assets.sh` が実体を複製し、feature 側は gitignore する。
 
 **作成後でないといけないもの**: Codex CLI。インストーラがバイナリ本体を
 `~/.codex/packages/` に置く、つまり実体が volume の中に入るため、ビルド時に入れても
@@ -283,6 +290,7 @@ publish 後にやること（忘れやすい）:
 | option で `mounts` / `dependsOn` を切れない | codex を無効にしても volume はマウントされる。他 feature の条件付き取り込みもできない | 永続化は無条件と割り切り、option は CLI 導入だけを決める |
 | Codex がバイナリを `~/.codex/` に置く | 実体が volume の中に入るので、ビルド時に入れても 2 回目以降のコンテナで宙を指す | `postCreateCommand` で volume に無いときだけ入れる。ランチャは毎回張り直す |
 | entrypoint でのネットワーク処理はコンテナ起動をブロックする | `features test` がダウンロード中にテストを開始して落ちた | 時間のかかる処理は `postCreateCommand` に置く |
+| feature の tarball は feature 配下しか含まず、symlink も解決しない | dotfiles 本体とファイルを共有できない | `features/sync-assets.sh` で実体を複製し、feature 側は gitignore。同期忘れはビルド時に落ちる |
 | コピーアップは volume が空のときだけ | feature を直しても既存 volume は直らない | `docker volume rm agent-state` が唯一のリセット手段 |
 | 初回初期化時の uid が volume に焼き付く | uid の違うイメージから使うと `0700` に弾かれる | entrypoint の chown で吸収。通常は `updateRemoteUserUID` が uid 1000 に寄せるので発生しない |
 | entrypoint が root で走る保証は無い | `containerUser` が非 root だと chown が失敗する | ビルド時の準備だけが頼りになる。`mcr` 系の既定なら root なので問題ない |

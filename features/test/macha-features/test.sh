@@ -35,9 +35,17 @@ check "statusline スクリプトがある" test -x "$SHARE/claude-statusline.sh
 check "settings.json に statusLine が入っている" \
     bash -c '[ "$(jq -r .statusLine.command /var/lib/agent-state/claude/settings.json)" \
               = /usr/local/share/macha-features/claude-statusline.sh ]'
-check "statusline が JSON を食って何か出す" \
-    bash -c 'echo "{\"model\":{\"display_name\":\"Opus\"},\"cwd\":\"/tmp\"}" \
-             | /usr/local/share/macha-features/claude-statusline.sh | grep -q Opus'
+# claude/statusline-command.sh は .workspace.current_dir を読んで
+# 「ディレクトリ名 (ブランチ)」を出す
+check "statusline がディレクトリ名を出す" \
+    bash -c 'echo "{\"workspace\":{\"current_dir\":\"/tmp\"}}" \
+             | /usr/local/share/macha-features/claude-statusline.sh | grep -qx tmp'
+check "statusline が git ブランチを出す" \
+    bash -c 'cd /tmp && rm -rf slrepo && mkdir slrepo && cd slrepo \
+             && git init -q -b main . \
+             && echo "{\"workspace\":{\"current_dir\":\"/tmp/slrepo\"}}" \
+                | /usr/local/share/macha-features/claude-statusline.sh \
+                | grep -qx "slrepo (main)"'
 
 check "entrypoint が実行可能"      test -x "$SHARE/entrypoint.sh"
 check "PATH に ~/.local/bin が入る" \
