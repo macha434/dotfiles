@@ -74,7 +74,8 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 
 スクリプトの正は**リポジトリルートの [`claude/statusline-command.sh`](../../../claude/) 側**で、
 dotfiles として `install.sh` がホストの `~/.claude/` にも配置する。feature 用のコピーは
-`features/sync-assets.sh` が生成する（gitignore 済み）。
+[`features/sync-assets.sh`](../../sync-assets.sh) が
+[`features/assets.tsv`](../../assets.tsv) の対応表に従って生成する（gitignore 済み）。
 
 feature の tarball には feature ディレクトリ配下しか入らず、しかも packaging は symlink を
 symlink のまま tar に入れる。リポジトリ内 symlink で共有すると公開された feature が宙を指す
@@ -90,8 +91,9 @@ symlink のまま tar に入れる。リポジトリ内 symlink で共有する�
 設定は `jq` で `statusLine` キーだけマージする。コンテナ内で自分が足した他の設定は壊れない。
 `jq` が無い環境では、`settings.json` が存在しないときだけ書く。
 
-表示を変えたいときは `claude/statusline-command.sh` を編集して `version` を上げる。
-ホスト側は `./install.sh claude` で反映される。
+表示を変えたいときは `claude/statusline-command.sh` を編集する。ホスト側は
+`./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**
+複製元を変えると CI は起動するが、version が同じままだと publish はスキップされる。
 
 Codex には Claude Code の `statusLine` に相当する仕組みが見当たらないため、Codex 側の
 ステータスライン設定は行っていない。

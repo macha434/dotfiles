@@ -109,7 +109,8 @@ features/
 | `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。`statusLine` 設定のマージ |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
 | `src/macha-features/statusline/claude.sh` | — | ステータスラインの本体。`claude/statusline-command.sh` からの生成物 |
-| `features/sync-assets.sh` | 手動 / CI | 上記を `claude/` から複製する |
+| `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
+| `features/assets.tsv` | — | 複製元と複製先の対応表。増やすときはここに 1 行 |
 
 ### なぜ 3 つに分かれるか
 
@@ -126,6 +127,11 @@ settings.json 側は不変なパスを指すだけでよく、陳腐化しない
 feature ディレクトリ配下しか入らない。しかも packaging は symlink を symlink のまま tar に
 入れる（実測で確認）ので、リポジトリ内 symlink で共有すると公開された feature が宙を指す
 リンクを抱える。そのため `features/sync-assets.sh` が実体を複製し、feature 側は gitignore する。
+
+複製する組は `features/assets.tsv` の対応表 1 箇所にまとめてある。今後ファイルが増えても
+ここに 1 行足すだけでよい。ただし追随が要る場所が 2 つある。**workflow の `paths:`**（複製元が
+変わったときに CI が起動しないと公開物に反映されない）と **`.gitignore`**（複製先は生成物）。
+`sync-assets.sh --verify` がこの 2 つの漏れを検査し、CI の両ジョブで走る。
 
 **作成後でないといけないもの**: Codex CLI。インストーラがバイナリ本体を
 `~/.codex/packages/` に置く、つまり実体が volume の中に入るため、ビルド時に入れても

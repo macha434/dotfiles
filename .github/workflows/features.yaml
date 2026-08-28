@@ -6,11 +6,14 @@ on:
     paths:
       - 'features/**'
       - '.github/workflows/features.yaml'
+      # features/assets.tsv の複製元。ここが変わったら feature も作り直す
+      - 'claude/statusline-command.sh'
   push:
     branches: [main]
     paths:
       - 'features/**'
       - '.github/workflows/features.yaml'
+      - 'claude/statusline-command.sh'
 
 jobs:
   test:
@@ -21,9 +24,12 @@ jobs:
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
 
-      # statusline は claude/ が正。tarball に入るよう feature 側へ複製する
+      # 複製元は claude/ などリポジトリルート側。tarball に入るよう feature へ複製する。
+      # --verify は、対応表に足したのに paths や .gitignore を直し忘れた場合に落とす
       - name: Sync feature assets
-        run: ./features/sync-assets.sh
+        run: |
+          ./features/sync-assets.sh --verify
+          ./features/sync-assets.sh
 
       # --features で絞らないので features/test/ 配下の全 feature が対象になる。
       # feature を増やしたときに、ここを直し忘れて未テストのまま publish される
@@ -54,6 +60,8 @@ jobs:
         run: ./features/sync-assets.sh
 
       # features/src/<id>/ を ghcr.io/<owner>/<repo>/<id> として publish する。
+      # 複製元だけ変えて version を据え置くと、workflow は走るが publish はスキップ
+      # される (同一 version は上書きしない)。反映したいなら version を上げること。
       # 既に存在するバージョンはスキップされるので、version を上げない限り無害。
       - name: Publish features
         uses: devcontainers/action@v1

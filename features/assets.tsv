@@ -1,0 +1,8 @@
+# dotfiles 本体のファイルを feature ディレクトリへ複製する対応表。
+# 正は左、右は生成物 (gitignore 済み)。どちらもリポジトリルートからの相対パス。
+#
+# 行を足したら ./features/sync-assets.sh --verify を通すこと。
+# workflow の paths と .gitignore が追随できているかを見てくれる。
+#
+# <source>                      <destination>
+claude/statusline-command.sh    features/src/macha-features/statusline/claude.sh
