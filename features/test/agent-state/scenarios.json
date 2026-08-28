@@ -1,0 +1,11 @@
+{
+    "both_enabled": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "agent-state": {
+                "claude": true,
+                "codex": true
+            }
+        }
+    }
+}

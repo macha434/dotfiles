@@ -1,0 +1,27 @@
+{
+    "id": "agent-state",
+    "version": "1.0.0",
+    "name": "Persistent agent state volume",
+    "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, so logins and history survive a rebuild.",
+    "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/agent-state",
+    "options": {
+        "claude": {
+            "type": "boolean",
+            "default": true,
+            "description": "Persist ~/.claude"
+        },
+        "codex": {
+            "type": "boolean",
+            "default": false,
+            "description": "Persist ~/.codex"
+        }
+    },
+    "mounts": [
+        {
+            "source": "agent-state",
+            "target": "/var/lib/agent-state",
+            "type": "volume"
+        }
+    ],
+    "entrypoint": "/usr/local/share/agent-state/entrypoint.sh"
+}
