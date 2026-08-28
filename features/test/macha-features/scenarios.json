@@ -2,7 +2,7 @@
     "both_enabled": {
         "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
         "features": {
-            "agent-state": {
+            "macha-features": {
                 "claude": true,
                 "codex": true
             }

@@ -1,4 +1,4 @@
-# agent-state
+# macha-features
 
 `~/.claude` や `~/.codex` を名前付き Docker volume に載せて、dev container を作り直しても
 消えないようにする feature。volume 名を固定しているので、プロジェクトをまたいで同じ状態を
@@ -6,7 +6,7 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/agent-state:0.1": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.1": {
         "claude": true,
         "codex": false
     }
@@ -17,7 +17,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/agent-state:0.1": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.1": { "claude": true }
 }
 ```
 

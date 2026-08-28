@@ -1,4 +1,4 @@
-# devcontainer feature `agent-state` 実装プラン
+# devcontainer feature `macha-features` 実装プラン
 
 `~/.claude` や `~/.codex` を名前付き Docker volume に載せ、すべての dev container で
 共有・永続化する devcontainer feature を作る。ベースは公式テンプレート
@@ -57,16 +57,16 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/agent-state:0.1`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.1`**。
 
 ```
 features/
 ├── src/
-│   └── agent-state/
+│   └── macha-features/
 │       ├── devcontainer-feature.json
 │       └── install.sh
 └── test/
-    └── agent-state/
+    └── macha-features/
         ├── test.sh
         ├── scenarios.json
         └── both_enabled.sh
@@ -82,7 +82,7 @@ features/
 > いじる話が生じるが、その論点自体が無い）。workflow は `paths:` で `features/src/**` に
 > 絞るので、dotfiles 側の commit で余計な release も走らない。
 >
-> 唯一の実質的なコストは参照名に repo 名が入ること（`ghcr.io/macha434/dotfiles/agent-state`）。
+> 唯一の実質的なコストは参照名に repo 名が入ること（`ghcr.io/macha434/dotfiles/macha-features`）。
 > 後から専用リポジトリへ移すと ref が変わり、`defaultFeatures` と利用側の
 > `devcontainer.json` を書き換えることになるので、名前は実質的に固定資産と考えておく。
 > feature が増えた・dotfiles を private にしたくなった・feature 単体で issue を
@@ -105,15 +105,15 @@ npm install -g @devcontainers/cli
 devcontainer --version
 ```
 
-### Step 2: `features/src/agent-state/devcontainer-feature.json`
+### Step 2: `features/src/macha-features/devcontainer-feature.json`
 
 ```jsonc
 {
-  "id": "agent-state",
+  "id": "macha-features",
   "version": "0.1.0",
   "name": "Persistent agent state volume",
   "description": "Keeps ~/.claude and ~/.codex in a shared named volume across dev containers.",
-  "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/agent-state",
+  "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
   "options": {
     "claude": {
       "type": "boolean",
@@ -140,7 +140,7 @@ devcontainer --version
 `source` を固定文字列にしているのが「volume を固定する」の実体。プロジェクトごとに
 分けたくなったら `agent-state-${devcontainerId}` にする。
 
-### Step 3: `features/src/agent-state/install.sh`
+### Step 3: `features/src/macha-features/install.sh`
 
 ```bash
 #!/usr/bin/env bash
@@ -225,7 +225,7 @@ entrypoint は root で走るので、その直前の `mkdir` が作るディレ
 
 ### Step 4: テストを書く
 
-`features/test/agent-state/test.sh`（既定の option = claude のみ有効）:
+`features/test/macha-features/test.sh`（既定の option = claude のみ有効）:
 
 ```bash
 #!/usr/bin/env bash
@@ -243,27 +243,27 @@ check "書き込める"                 bash -c 'touch "$HOME/.claude/probe"'
 reportResults
 ```
 
-`features/test/agent-state/scenarios.json`（両方有効にした場合）:
+`features/test/macha-features/scenarios.json`（両方有効にした場合）:
 
 ```jsonc
 {
   "both_enabled": {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-      "agent-state": { "claude": true, "codex": true }
+      "macha-features": { "claude": true, "codex": true }
     }
   }
 }
 ```
 
-`features/test/agent-state/both_enabled.sh` で `~/.codex` の symlink も検査する。
+`features/test/macha-features/both_enabled.sh` で `~/.codex` の symlink も検査する。
 
 実行:
 
 ```bash
 devcontainer features test \
   --project-folder ./features \
-  --features agent-state \
+  --features macha-features \
   --base-image mcr.microsoft.com/devcontainers/base:ubuntu \
   --remote-user vscode
 ```
@@ -289,7 +289,7 @@ cat > /tmp/agent-state-check/.devcontainer/devcontainer.json <<'JSON'
 {
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-    "./features/src/agent-state": { "claude": true }
+    "./features/src/macha-features": { "claude": true }
   }
 }
 JSON
@@ -385,7 +385,7 @@ jobs:
 
 publish 後にやること（忘れやすい）:
 
-- GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `agent-state` を
+- GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
 - 公開されるタグは `0` / `0.1` / `0.1.0` / `latest`。0.x では破壊的変更が minor に
   乗るので、1.x での `:1` に相当する固定先は `:0.1` になる
@@ -397,7 +397,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/agent-state:0.1": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.1": {
     "claude": true,
     "codex": false
   }

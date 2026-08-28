@@ -21,11 +21,11 @@ agents=()
 [ "${CODEX:-false}"  = "true" ] && agents+=(codex)
 
 if [ ${#agents[@]} -eq 0 ]; then
-    echo "agent-state: 有効な agent が無いので何もしない"
+    echo "macha-features: 有効な agent が無いので何もしない"
     exit 0
 fi
 
-echo "agent-state: ${agents[*]} を $STATE に載せる (user=$USERNAME)"
+echo "macha-features: ${agents[*]} を $STATE に載せる (user=$USERNAME)"
 
 install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE"
 
@@ -80,4 +80,4 @@ INNER
 } > /usr/local/share/agent-state/entrypoint.sh
 chmod +x /usr/local/share/agent-state/entrypoint.sh
 
-echo "agent-state: 完了"
+echo "macha-features: 完了"
