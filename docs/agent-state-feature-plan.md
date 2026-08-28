@@ -72,7 +72,7 @@ features/
 │       ├── install.sh          # ビルド時 (root)
 │       ├── entrypoint.sh       # 起動ごと (root)
 │       ├── ensure-codex.sh     # postCreateCommand (remote user)
-│       ├── statusline/claude.sh
+│       ├── claude/statusline-command.sh   # 生成物 (gitignore)
 │       └── README.md
 └── test/
     └── macha-features/
@@ -108,7 +108,7 @@ features/
 | `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink。Claude Code CLI。entrypoint と statusline の配置 |
 | `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。`statusLine` 設定のマージ |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
-| `src/macha-features/statusline/claude.sh` | — | ステータスラインの本体。`claude/statusline-command.sh` からの生成物 |
+| `src/macha-features/claude/statusline-command.sh` | — | ステータスラインの本体。ルートの `claude/` からの生成物。パスの並びもルートに揃えてある |
 | `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
 | `features/assets.tsv` | — | 複製元と複製先の対応表。増やすときはここに 1 行 |
 

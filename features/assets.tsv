@@ -5,4 +5,4 @@
 # workflow の paths と .gitignore が追随できているかを見てくれる。
 #
 # <source>                      <destination>
-claude/statusline-command.sh    features/src/macha-features/statusline/claude.sh
+claude/statusline-command.sh    features/src/macha-features/claude/statusline-command.sh

@@ -23,8 +23,8 @@ AGENTS=(claude codex)
 
 # statusline スクリプトは dotfiles 本体 (claude/) が正で、features/sync-assets.sh が
 # ここへ複製する。tarball には feature 配下しか入らないため実体のコピーが要る。
-if [ ! -f "$SRC/statusline/claude.sh" ]; then
-    echo "macha-features: statusline/claude.sh が無い。features/sync-assets.sh を先に実行すること" >&2
+if [ ! -f "$SRC/claude/statusline-command.sh" ]; then
+    echo "macha-features: claude/statusline-command.sh が無い。features/sync-assets.sh を先に実行すること" >&2
     exit 1
 fi
 
@@ -78,7 +78,7 @@ chmod 644 /etc/profile.d/macha-features-path.sh
 # 初回しか起きず、更新が 2 回目以降のコンテナに届かないため。
 install -d "$SHARE"
 install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
-install -m 755 "$SRC/statusline/claude.sh"   "$SHARE/claude-statusline.sh"
+install -m 755 "$SRC/claude/statusline-command.sh" "$SHARE/claude-statusline.sh"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む

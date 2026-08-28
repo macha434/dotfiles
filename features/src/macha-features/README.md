@@ -76,6 +76,7 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 dotfiles として `install.sh` がホストの `~/.claude/` にも配置する。feature 用のコピーは
 [`features/sync-assets.sh`](../../sync-assets.sh) が
 [`features/assets.tsv`](../../assets.tsv) の対応表に従って生成する（gitignore 済み）。
+複製先はリポジトリルートと同じ `claude/statusline-command.sh` の並びにしてある。
 
 feature の tarball には feature ディレクトリ配下しか入らず、しかも packaging は symlink を
 symlink のまま tar に入れる。リポジトリ内 symlink で共有すると公開された feature が宙を指す
