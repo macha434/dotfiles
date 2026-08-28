@@ -39,7 +39,9 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # devcontainers/action は publish 後に feature_<id>_<version> の git タグを
+      # 打つので、read だと publish 自体は通るがタグ付けだけ失敗する
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v4
