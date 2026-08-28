@@ -1,0 +1,4 @@
+# features/assets.tsv の複製先。正は複製元のほうで、こちらは生成物。
+# 対応表に行を足したら、ここにも無視するパスを足すこと。
+# ./features/sync-assets.sh --verify が漏れを教えてくれる。
+features/src/macha-features/claude/

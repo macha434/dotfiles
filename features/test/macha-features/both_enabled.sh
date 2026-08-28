@@ -3,18 +3,25 @@
 set -e
 source dev-container-features-test-lib
 
-STATE=/var/lib/agent-state
+check "claude CLI が入っている" test -x /home/vscode/.local/bin/claude
+check "claude が起動する"       bash -c '/home/vscode/.local/bin/claude --version | grep -q "Claude Code"'
 
-for name in claude codex; do
-    check "$name の実体がある"    test -d "$STATE/$name"
-    check "$name の symlink がある" test -L "/home/vscode/.$name"
-    check "$name のリンク先が正しい" \
-        bash -c "[ \"\$(readlink /home/vscode/.$name)\" = $STATE/$name ]"
-    check "$name の所有者が vscode" \
-        bash -c "[ \"\$(stat -c %U $STATE/$name)\" = vscode ]"
+# codex は entrypoint が volume に入れるので、ランチャの解決先まで見る
+check "codex のランチャがある"  test -L /home/vscode/.local/bin/codex
+check "codex のリンクが解決する" \
+    bash -c '[ -x "$(readlink -f /home/vscode/.local/bin/codex)" ]'
+check "codex の実体が volume にある" \
+    bash -c 'readlink -f /home/vscode/.local/bin/codex | grep -q "^/var/lib/agent-state/codex/"'
+check "codex が起動する"        bash -c '/home/vscode/.local/bin/codex --version | grep -q codex'
+
+for a in claude codex; do
+    check "$a の symlink がある" test -L "/home/vscode/.$a"
+    check "$a の所有者が vscode" \
+        bash -c "[ \"\$(stat -c %U /var/lib/agent-state/$a)\" = vscode ]"
 done
 
-check "entrypoint が両方を知っている" \
-    bash -c 'grep -q "AGENTS=(claude codex)" /usr/local/share/agent-state/entrypoint.sh'
+check "config が両方 true で焼かれている" \
+    bash -c 'grep -q "^CLAUDE=true$" /usr/local/share/macha-features/config \
+             && grep -q "^CODEX=true$" /usr/local/share/macha-features/config'
 
 reportResults

@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`statusline-command.sh`)
 
 ## Setup
 
@@ -82,9 +82,11 @@ Layout:
 | `install.sh` | Entry point. Parses arguments and runs each `install.d/*.sh` in a subshell |
 | `lib/common.sh` | OS detection, Windows path resolution, `install_file`, logging |
 | `install.d/<name>.sh` | Installs one tool. The file name is the name accepted on the command line |
-| `vscode/` | The files themselves |
+| `vscode/` | VS Code's files themselves |
+| `claude/` | Claude Code's files themselves, including the status line script |
 | `features/` | Dev container features published to GHCR, with their tests. Not touched by `install.sh` |
 | `docs/` | Design notes and implementation plans |
+| `features/assets.tsv` | Which dotfiles get copied into a feature before packaging, and where |
 
 To add a tool, drop its files in a directory and add `install.d/<name>.sh`. `install.sh` finds it by glob, so the entry point needs no change. Inside the script, `$DOTFILES_ROOT` points at the repository root, `$DOTFILES_OS` holds the detected OS, and `install_file <src> <dest>` handles backup, symlink or copy, and `--dry-run`.
 
