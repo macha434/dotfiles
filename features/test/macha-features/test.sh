@@ -35,17 +35,28 @@ check "statusline スクリプトがある" test -x "$SHARE/claude-statusline.sh
 check "settings.json に statusLine が入っている" \
     bash -c '[ "$(jq -r .statusLine.command /var/lib/agent-state/claude/settings.json)" \
               = /usr/local/share/macha-features/claude-statusline.sh ]'
-# claude/statusline-command.sh は .workspace.current_dir を読んで
-# 「ディレクトリ名 (ブランチ)」を出す
-check "statusline がディレクトリ名を出す" \
-    bash -c 'echo "{\"workspace\":{\"current_dir\":\"/tmp\"}}" \
-             | /usr/local/share/macha-features/claude-statusline.sh | grep -qx tmp'
-check "statusline が git ブランチを出す" \
-    bash -c 'cd /tmp && rm -rf slrepo && mkdir slrepo && cd slrepo \
-             && git init -q -b main . \
-             && echo "{\"workspace\":{\"current_dir\":\"/tmp/slrepo\"}}" \
-                | /usr/local/share/macha-features/claude-statusline.sh \
-                | grep -qx "slrepo (main)"'
+check "settings.json に refreshInterval 1 が入っている" \
+    bash -c '[ "$(jq -r .statusLine.refreshInterval /var/lib/agent-state/claude/settings.json)" = 1 ]'
+# statusline は 3 行構成。ANSI を落として中身を見る。
+SL=/usr/local/share/macha-features/claude-statusline.sh
+check "statusline が 3 行出す" \
+    bash -c 'echo "{}" | '"$SL"' | wc -l | grep -qx 3'
+check "statusline がモデル ID を出す" \
+    bash -c 'echo "{\"model\":{\"id\":\"claude-opus-5\"}}" | '"$SL"' \
+             | sed "s/\x1b\[[0-9;]*m//g" | grep -q claude-opus-5'
+check "statusline がコンテキスト率を出す" \
+    bash -c 'echo "{\"context_window\":{\"used_percentage\":42}}" | '"$SL"' \
+             | sed "s/\x1b\[[0-9;]*m//g" | grep -q "ctx 42%"'
+# 5 時間窓で 2 時間経過 (残り 3 時間) なら、線形ペースは 40%。
+# 45% はそれを超えるので赤、25% は 30% も下回るので緑。
+check "レート制限がペース超過で赤になる" \
+    bash -c 'echo "{\"rate_limits\":{\"five_hour\":{\"used_percentage\":45,\"resets_at\":$(($(date +%s)+10800))}}}" \
+             | '"$SL"' | tail -1 | grep -qP "\x1b\[31m"'
+check "レート制限がペース内で緑になる" \
+    bash -c 'echo "{\"rate_limits\":{\"five_hour\":{\"used_percentage\":25,\"resets_at\":$(($(date +%s)+10800))}}}" \
+             | '"$SL"' | tail -1 | grep -qP "\x1b\[32m"'
+check "rate_limits が無くても落ちない" \
+    bash -c 'echo "{}" | '"$SL"' >/dev/null'
 
 check "entrypoint が実行可能"      test -x "$SHARE/entrypoint.sh"
 check "PATH に ~/.local/bin が入る" \

@@ -39,13 +39,17 @@ apply_claude_statusline() {
     if ! command -v jq >/dev/null 2>&1; then
         # jq が無い環境では既存を壊さないよう、無いときだけ作る
         [ -e "$settings" ] && return 0
-        printf '{"statusLine":{"type":"command","command":"%s"}}\n' "$script" > "$settings"
+        printf '{"statusLine":{"type":"command","command":"%s","refreshInterval":1}}\n' \
+            "$script" > "$settings"
     else
         [ -s "$settings" ] || echo '{}' > "$settings"
         local tmp
         tmp=$(mktemp)
+        # refreshInterval はレート制限の残り時間を進めるために要る。
+        # イベント駆動だけだとアイドル中に表示が止まる。
         if jq --arg cmd "$script" \
-             '.statusLine = {type: "command", command: $cmd}' "$settings" > "$tmp" 2>/dev/null; then
+             '.statusLine = {type: "command", command: $cmd, refreshInterval: 1}' \
+             "$settings" > "$tmp" 2>/dev/null; then
             mv "$tmp" "$settings"
         else
             rm -f "$tmp"
