@@ -57,7 +57,7 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/agent-state:1`**。
+**`ghcr.io/macha434/dotfiles/agent-state:0.1`**。
 
 ```
 features/
@@ -110,7 +110,7 @@ devcontainer --version
 ```jsonc
 {
   "id": "agent-state",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "name": "Persistent agent state volume",
   "description": "Keeps ~/.claude and ~/.codex in a shared named volume across dev containers.",
   "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/agent-state",
@@ -387,15 +387,17 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `agent-state` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `1` / `1.0` / `1.0.0` / `latest`。参照は `:1` にしておくと
-  patch 更新を自動で拾える
+- 公開されるタグは `0` / `0.1` / `0.1.0` / `latest`。0.x では破壊的変更が minor に
+  乗るので、1.x での `:1` に相当する固定先は `:0.1` になる
+- git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
+  （`read` だと publish は通ってタグ付けだけ失敗する）
 
 ### Step 7: ユーザー設定に登録する
 
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/agent-state:1": {
+  "ghcr.io/macha434/dotfiles/agent-state:0.1": {
     "claude": true,
     "codex": false
   }

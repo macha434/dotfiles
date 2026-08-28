@@ -6,7 +6,7 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/agent-state:1": {
+    "ghcr.io/macha434/dotfiles/agent-state:0.1": {
         "claude": true,
         "codex": false
     }
@@ -17,7 +17,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/agent-state:1": { "claude": true }
+    "ghcr.io/macha434/dotfiles/agent-state:0.1": { "claude": true }
 }
 ```
 

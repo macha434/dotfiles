@@ -1,6 +1,6 @@
 {
     "id": "agent-state",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "name": "Persistent agent state volume",
     "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, so logins and history survive a rebuild.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/agent-state",
