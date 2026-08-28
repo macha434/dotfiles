@@ -1,0 +1,55 @@
+name: Features
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'features/**'
+      - '.github/workflows/features.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'features/**'
+      - '.github/workflows/features.yaml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      # --features で絞らないので features/test/ 配下の全 feature が対象になる。
+      # feature を増やしたときに、ここを直し忘れて未テストのまま publish される
+      # のを防ぐため、あえて列挙しない。
+      # --base-image の既定は vscode ユーザーの居ない ubuntu:focal なので明示する。
+      - name: Test features
+        run: |
+          devcontainer features test \
+            --project-folder ./features \
+            --base-image mcr.microsoft.com/devcontainers/base:ubuntu \
+            --remote-user vscode
+
+  release:
+    # テストが通るまで publish しない。needs は同一 workflow 内でしか張れないので、
+    # test と release を 1 ファイルにまとめている。
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # features/src/<id>/ を ghcr.io/<owner>/<repo>/<id> として publish する。
+      # 既に存在するバージョンはスキップされるので、version を上げない限り無害。
+      - name: Publish features
+        uses: devcontainers/action@v1
+        with:
+          publish-features: 'true'
+          base-path-to-features: ./features/src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
