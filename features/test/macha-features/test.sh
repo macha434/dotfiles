@@ -1,26 +1,46 @@
 #!/usr/bin/env bash
-# 既定の option (claude のみ有効) で検査する。
+# 既定の option (claude=true, codex=false) で検査する。
 #
-# devcontainer features test は feature の mounts も適用するので、ここでの
-# /var/lib/agent-state は実際に volume である。ローカルで回すと agent-state
-# volume が残るため、docker volume rm agent-state で片付けること。
+# devcontainer features test は feature の mounts も entrypoint も適用するので、
+# ここでの /var/lib/agent-state は実際に volume で、statusline も当たった後。
+# ローカルで回すと agent-state volume が残るため
+# docker volume rm agent-state で片付けること。
 #
-# ただし永続化・共有・別 uid からの復旧はここでは見ていない。
+# 永続化・共有・別 uid からの復旧はここでは見ていない。
 # docs/agent-state-feature-plan.md の Step 5 を別途通すこと。
 set -e
 source dev-container-features-test-lib
 
 STATE=/var/lib/agent-state
-HOME_DIR=/home/vscode
+SHARE=/usr/local/share/macha-features
 
-check "state ディレクトリがある"      test -d "$STATE"
-check "所有者が vscode"               bash -c '[ "$(stat -c %U /var/lib/agent-state)" = vscode ]'
-check "パーミッションが 700"          bash -c '[ "$(stat -c %a /var/lib/agent-state)" = 700 ]'
-check "claude の実体がある"           test -d "$STATE/claude"
-check "claude の symlink がある"      test -L "$HOME_DIR/.claude"
-check "リンク先が正しい"              bash -c '[ "$(readlink /home/vscode/.claude)" = /var/lib/agent-state/claude ]'
-check "codex は既定で無効"            bash -c '[ ! -e /home/vscode/.codex ]'
-check "entrypoint が実行可能"         test -x /usr/local/share/agent-state/entrypoint.sh
-check "entrypoint の構文が妥当"       bash -n /usr/local/share/agent-state/entrypoint.sh
+# --- volume と symlink は option に関わらず両方 ---
+check "state の所有者が vscode"   bash -c '[ "$(stat -c %U /var/lib/agent-state)" = vscode ]'
+check "state のパーミッションが 700" bash -c '[ "$(stat -c %a /var/lib/agent-state)" = 700 ]'
+for a in claude codex; do
+    check "$a の実体がある"        test -d "$STATE/$a"
+    check "$a の symlink がある"   test -L "/home/vscode/.$a"
+    check "$a のリンク先が正しい" \
+        bash -c "[ \"\$(readlink /home/vscode/.$a)\" = $STATE/$a ]"
+done
+
+# --- CLI は option どおり ---
+check "claude CLI が入っている"    test -x /home/vscode/.local/bin/claude
+check "codex CLI は入っていない"   bash -c '[ ! -e /home/vscode/.local/bin/codex ]'
+check "codex のバイナリも入っていない" \
+    bash -c '[ ! -e /var/lib/agent-state/codex/packages ]'
+
+# --- statusline ---
+check "statusline スクリプトがある" test -x "$SHARE/claude-statusline.sh"
+check "settings.json に statusLine が入っている" \
+    bash -c '[ "$(jq -r .statusLine.command /var/lib/agent-state/claude/settings.json)" \
+              = /usr/local/share/macha-features/claude-statusline.sh ]'
+check "statusline が JSON を食って何か出す" \
+    bash -c 'echo "{\"model\":{\"display_name\":\"Opus\"},\"cwd\":\"/tmp\"}" \
+             | /usr/local/share/macha-features/claude-statusline.sh | grep -q Opus'
+
+check "entrypoint が実行可能"      test -x "$SHARE/entrypoint.sh"
+check "PATH に ~/.local/bin が入る" \
+    bash -lc 'case ":$PATH:" in *":$HOME/.local/bin:"*) exit 0;; *) exit 1;; esac'
 
 reportResults

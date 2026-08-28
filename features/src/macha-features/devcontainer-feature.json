@@ -1,19 +1,19 @@
 {
     "id": "macha-features",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "name": "Persistent agent state volume",
-    "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, so logins and history survive a rebuild.",
+    "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
     "options": {
         "claude": {
             "type": "boolean",
             "default": true,
-            "description": "Persist ~/.claude"
+            "description": "Install the Claude Code CLI and apply the status line"
         },
         "codex": {
             "type": "boolean",
             "default": false,
-            "description": "Persist ~/.codex"
+            "description": "Install the Codex CLI"
         }
     },
     "mounts": [
@@ -23,5 +23,6 @@
             "type": "volume"
         }
     ],
-    "entrypoint": "/usr/local/share/agent-state/entrypoint.sh"
+    "entrypoint": "/usr/local/share/macha-features/entrypoint.sh",
+    "postCreateCommand": "/usr/local/share/macha-features/ensure-codex.sh"
 }

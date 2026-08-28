@@ -1,14 +1,15 @@
-# devcontainer feature `macha-features` 実装プラン
+# devcontainer feature `macha-features` 設計メモ
 
-`~/.claude` や `~/.codex` を名前付き Docker volume に載せ、すべての dev container で
-共有・永続化する devcontainer feature を作る。ベースは公式テンプレート
+`~/.claude` と `~/.codex` を名前付き Docker volume に載せ、すべての dev container で
+共有・永続化する devcontainer feature。オプションで agent の CLI 導入と
+ステータスライン適用も行う。ベースは公式テンプレート
 [devcontainers/feature-starter](https://github.com/devcontainers/feature-starter)。
 
-> **現状**: Step 1〜5 は実装・検証まで完了している（`features/` と
-> `.github/workflows/features.yaml`）。残りは Step 6（GHCR へ publish して
-> パッケージを public にする）と Step 7（ユーザー設定への登録）。
+> **現状**: 実装・公開済み。`ghcr.io/macha434/dotfiles/macha-features` で公開している。
+> コードの正は `features/src/macha-features/` にあり、このドキュメントは
+> **なぜそうなっているか**だけを残す。使い方は
+> [features/src/macha-features/README.md](../features/src/macha-features/README.md)。
 
----
 
 ## 1. ゴール
 
@@ -31,15 +32,18 @@
 
 ## 3. 採用する構成
 
-option で `mounts` を切れないため、**volume は 1 本だけ固定でマウントし、symlink の張り分けで
-オン・オフを表現する**。
+option で `mounts` を切れないため、**volume は 1 本だけ固定でマウントする**。
 
 ```
 volume "agent-state"
    └─ mount → /var/lib/agent-state        ← ユーザー名に依存しない固定パス
-                ├─ claude/  ←── symlink ── $HOME/.claude   (claude: true のとき)
-                └─ codex/   ←── symlink ── $HOME/.codex    (codex: true のとき)
+                ├─ claude/  ←── symlink ── $HOME/.claude
+                └─ codex/   ←── symlink ── $HOME/.codex
 ```
+
+**永続化は option に関わらず常に行う。** 当初は symlink の張り分けでオン・オフを
+表現していたが、`mounts` がどのみち無条件である以上、片方だけ symlink を張らないのは
+一貫性が無い。option が決めるのは **CLI を入れるかどうかと statusline を当てるか**だけ。
 
 マウント先を `$HOME` の下に置かない理由: `mounts` の `target` は静的メタデータなので
 `_REMOTE_USER_HOME` を展開できない。`/home/vscode/...` を決め打ちすると `remoteUser` が
@@ -50,21 +54,26 @@ volume "agent-state"
 
 | フェーズ | 実行者 | やること |
 | --- | --- | --- |
-| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink を張る。entrypoint を生成する |
-| 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。`exec "$@"` |
+| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。Claude Code CLI。entrypoint と statusline の配置 |
+| 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。`statusLine` をマージする。`exec "$@"` |
+| 作成後 `ensure-codex.sh` | remote user（`postCreateCommand`） | Codex CLI を volume に無いときだけ入れ、ランチャを張り直す |
 
 ## 4. リポジトリ構成
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.1`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.2`**。
 
 ```
 features/
 ├── src/
 │   └── macha-features/
 │       ├── devcontainer-feature.json
-│       └── install.sh
+│       ├── install.sh          # ビルド時 (root)
+│       ├── entrypoint.sh       # 起動ごと (root)
+│       ├── ensure-codex.sh     # postCreateCommand (remote user)
+│       ├── statusline/claude.sh
+│       └── README.md
 └── test/
     └── macha-features/
         ├── test.sh
@@ -90,198 +99,56 @@ features/
 
 ---
 
-## 5. 実装ステップ
+## 5. 実装
 
-### Step 1: テンプレートを取得して骨組みを作る
+コードの正はリポジトリのファイル。ここでは「どれがどのタイミングで走るか」だけ示す。
 
-`devcontainers/feature-starter` を "Use this template" せず、必要なファイルだけ手で写す
-（既存リポジトリに同居させるため）。写すのは release / test の 2 つの workflow と
-`src` / `test` のディレクトリ構造だけでよい。
+| ファイル | いつ / 誰が | 役割 |
+| --- | --- | --- |
+| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink。Claude Code CLI。entrypoint と statusline の配置 |
+| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。`statusLine` 設定のマージ |
+| `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
+| `src/macha-features/statusline/claude.sh` | — | ステータスラインの本体。イメージ側に配置される |
 
-devcontainer CLI をローカルに入れておく。
+### なぜ 3 つに分かれるか
 
-```bash
-npm install -g @devcontainers/cli
-devcontainer --version
-```
+**ビルド時でないといけないもの**: volume のコピーアップに乗せる中身と所有権。これが
+この feature の肝で、実行時の chown が要らない理由。
 
-### Step 2: `features/src/macha-features/devcontainer-feature.json`
+**起動ごとでないといけないもの**: `~/.claude/settings.json` への `statusLine` 設定。
+volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか届かない。
+スクリプト本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
+settings.json 側は不変なパスを指すだけでよく、陳腐化しない。
 
-```jsonc
-{
-  "id": "macha-features",
-  "version": "0.1.0",
-  "name": "Persistent agent state volume",
-  "description": "Keeps ~/.claude and ~/.codex in a shared named volume across dev containers.",
-  "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
-  "options": {
-    "claude": {
-      "type": "boolean",
-      "default": true,
-      "description": "Persist ~/.claude"
-    },
-    "codex": {
-      "type": "boolean",
-      "default": false,
-      "description": "Persist ~/.codex"
-    }
-  },
-  "mounts": [
-    {
-      "source": "agent-state",
-      "target": "/var/lib/agent-state",
-      "type": "volume"
-    }
-  ],
-  "entrypoint": "/usr/local/share/agent-state/entrypoint.sh"
-}
-```
+**作成後でないといけないもの**: Codex CLI。インストーラがバイナリ本体を
+`~/.codex/packages/` に置く、つまり実体が volume の中に入るため、ビルド時に入れても
+2 回目以降のコンテナには届かず `~/.local/bin/codex` が宙を指す（実測で確認）。
+entrypoint でやるとダウンロードがコンテナ起動をブロックし、テストハーネスとも競合した。
+`postCreateCommand` なら remote user で走り、devcontainer が完了を待つ。
 
-`source` を固定文字列にしているのが「volume を固定する」の実体。プロジェクトごとに
-分けたくなったら `agent-state-${devcontainerId}` にする。
+Claude Code は `~/.local/share/claude/` に入る（volume の外）ので、この問題が無く
+ビルド時に入れられる。同じ「CLI を入れる」でも扱いが分かれるのはこの差による。
 
-### Step 3: `features/src/macha-features/install.sh`
-
-```bash
-#!/usr/bin/env bash
-# ビルド時に root で走る。この時点で volume はまだ存在しない。
-# ここで作った $STATE の中身と所有権が、空 volume の初回マウントで
-# そのままコピーアップされる。これがこの feature の肝。
-set -euo pipefail
-
-USERNAME="${_REMOTE_USER:-vscode}"
-HOME_DIR="${_REMOTE_USER_HOME:-/home/$USERNAME}"
-STATE=/var/lib/agent-state
-
-# option は大文字の環境変数で届く。値は文字列。
-agents=()
-[ "${CLAUDE:-false}" = "true" ] && agents+=(claude)
-[ "${CODEX:-false}"  = "true" ] && agents+=(codex)
-
-if [ ${#agents[@]} -eq 0 ]; then
-    echo "agent-state: 有効な agent が無いので何もしない"
-    exit 0
-fi
-
-install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE"
-
-for name in "${agents[@]}"; do
-    install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE/$name"
-
-    # ベースイメージが既に設定を持っていれば volume 側へ移してから貼り替える
-    if [ -d "$HOME_DIR/.$name" ] && [ ! -L "$HOME_DIR/.$name" ]; then
-        cp -a "$HOME_DIR/.$name/." "$STATE/$name/"
-        rm -rf "$HOME_DIR/.$name"
-        chown -R "$USERNAME:$USERNAME" "$STATE/$name"
-    fi
-
-    ln -sfn "$STATE/$name" "$HOME_DIR/.$name"
-    chown -h "$USERNAME:$USERNAME" "$HOME_DIR/.$name"
-done
-
-# _REMOTE_USER はビルド時にしか渡らないので、値を焼き込んで entrypoint を生成する
-install -d /usr/local/share/agent-state
-{
-    echo '#!/usr/bin/env bash'
-    echo 'set -eu'
-    printf 'USERNAME=%q\n' "$USERNAME"
-    printf 'STATE=%q\n'    "$STATE"
-    printf 'AGENTS=(%s)\n' "${agents[*]}"
-    cat <<'INNER'
-
-uid=$(id -u "$USERNAME")
-gid=$(id -g "$USERNAME")
-
-# 既に中身のある volume を掴んだ場合、コピーアップは起きない。
-# 後から agent を有効化したときのためにサブディレクトリを補う。
-for name in "${AGENTS[@]}"; do
-    [ -d "$STATE/$name" ] || mkdir -p "$STATE/$name"
-done
-
-# 別 uid のイメージが初期化した volume と、直前の行が root で作ったばかりの
-# サブディレクトリの両方に備える。$STATE だけを見ると後者を取りこぼす。
-# bind mount と違いホスト側に実体が無いので chown して差し支えない。
-if [ "$(id -u)" = 0 ]; then
-    for dir in "$STATE" "${AGENTS[@]/#/$STATE/}"; do
-        [ -d "$dir" ] || continue
-        [ "$(stat -c %u "$dir")" = "$uid" ] || chown -R "$uid:$gid" "$dir"
-        chmod 700 "$dir"
-    done
-fi
-
-exec "$@"
-INNER
-} > /usr/local/share/agent-state/entrypoint.sh
-chmod +x /usr/local/share/agent-state/entrypoint.sh
-```
-
-`exec "$@"` は必須。複数 feature の entrypoint は数珠つなぎに呼ばれるので、
-落とすと後続の feature が動かなくなる。
-
-chown の対象を `$STATE` だけでなく各サブディレクトリまで広げているのは意図的。
-entrypoint は root で走るので、その直前の `mkdir` が作るディレクトリは `root:root` に
-なる。`$STATE` 自体は正しい所有者のままなので、`$STATE` だけを条件にすると
-**後から agent を有効化したケースを丸ごと取りこぼす**（実機で踏んだ）。
-
-### Step 4: テストを書く
-
-`features/test/macha-features/test.sh`（既定の option = claude のみ有効）:
-
-```bash
-#!/usr/bin/env bash
-set -e
-source dev-container-features-test-lib
-
-check "claude の symlink がある"   bash -c '[ -L "$HOME/.claude" ]'
-check "リンク先が正しい"           bash -c '[ "$(readlink "$HOME/.claude")" = /var/lib/agent-state/claude ]'
-check "codex は既定で無効"         bash -c '[ ! -e "$HOME/.codex" ]'
-check "state の所有者が自分"       bash -c '[ "$(stat -c %u /var/lib/agent-state)" = "$(id -u)" ]'
-check "パーミッションが 700"       bash -c '[ "$(stat -c %a /var/lib/agent-state)" = 700 ]'
-check "entrypoint が実行可能"      test -x /usr/local/share/agent-state/entrypoint.sh
-check "書き込める"                 bash -c 'touch "$HOME/.claude/probe"'
-
-reportResults
-```
-
-`features/test/macha-features/scenarios.json`（両方有効にした場合）:
-
-```jsonc
-{
-  "both_enabled": {
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-    "features": {
-      "macha-features": { "claude": true, "codex": true }
-    }
-  }
-}
-```
-
-`features/test/macha-features/both_enabled.sh` で `~/.codex` の symlink も検査する。
-
-実行:
+### テスト
 
 ```bash
 devcontainer features test \
   --project-folder ./features \
-  --features macha-features \
   --base-image mcr.microsoft.com/devcontainers/base:ubuntu \
   --remote-user vscode
 ```
 
 `--base-image` の既定は `ubuntu:focal` で `vscode` ユーザーが居ないため、明示が要る。
-`--remote-user` も同様。位置引数でパスを渡す形は deprecated なので `--project-folder` を使う。
-
 `--features` はローカルで 1 つに絞りたいときだけ付ける。CI では**あえて付けない**
 （feature を増やしたときに列挙を直し忘れ、未テストのまま publish されるのを防ぐため）。
 
-> `features test` は feature の `mounts` も適用する。つまり**テストを走らせると実際に
-> `agent-state` volume が作られて残る**。ローカルで回したら `docker volume rm agent-state`
-> で片付けること。放置すると次の本番利用でコピーアップが起きず、テスト時の空ディレクトリを
-> 引き継いだ状態から始まる。
->
-> ただし永続化・共有・uid の引き継ぎは test.sh の検査範囲外なので、Step 5 は別途通す。
+> `features test` は feature の `mounts` も `entrypoint` も適用する。つまり**テストを
+> 走らせると実際に `agent-state` volume が作られて残る**。ローカルで回したら
+> `docker volume rm agent-state` で片付けること。放置すると次の本番利用でコピーアップが
+> 起きず、テスト時の空ディレクトリを引き継いだ状態から始まる。
 
-### Step 5: 実コンテナでの手動検証
+
+### 実コンテナでの手動検証
 
 ```bash
 mkdir -p /tmp/agent-state-check/.devcontainer
@@ -312,19 +179,20 @@ publish 前はローカルパス参照でよい（相対パス指定の feature 
 
 ### 検証済みの範囲
 
-**1〜8 すべて実機で確認済み**（2026-08-28）。
+`devcontainer features test` の 2 シナリオ 27 項目が pass。加えて実コンテナで確認済み:
 
-- `devcontainer features test` … `test.sh` / `both_enabled` の両シナリオが pass
-- `devcontainer up` で 2 つのワークスペースを立て、
-  ws1 が書いたファイルが ws2 から見えること（共有）、
-  ws1 のコンテナを破棄して作り直しても両方のファイルが残ること（永続化）を確認
-- まっさらな volume で `/var/lib/agent-state` が `vscode:vscode 700` になり、
-  sudo 無しで書けることを確認
-- `chown -R 0:0` でわざと壊してからの自動復旧を確認
+| 項目 | 結果 |
+| --- | --- |
+| まっさらな volume の所有権 | `vscode:vscode 700`、sudo 無しで書ける |
+| 別ワークスペースからの共有 | ws1 が書いたファイルが ws2 から見える |
+| コンテナ破棄 → 再作成 | ファイルが残る |
+| 後から agent を追加 | 既存を壊さずにサブディレクトリが生える |
+| `chown -R 0:0` で破壊 | 起動時に自動復旧 |
+| 既存 `~/.claude` を持つイメージ | volume 側へ引き継がれる |
+| Claude / Codex CLI | 両方起動する。statusLine も当たる |
+| 2 回目のコンテナ | Codex を再ダウンロードしない（30 秒 → 3 秒） |
 
-未検証で残っているのは publish 後の `defaultFeatures` 経由での参照だけ（Step 6 / Step 7）。
-
-### Step 6: GHCR に publish する
+### GHCR への publish
 
 test と release は **1 ファイルにまとめる**。`needs:` は同一 workflow 内でしか張れず、
 別ファイルに分けるとテストの成否と無関係に publish が走ってしまうため。
@@ -387,17 +255,17 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.1` / `0.1.0` / `latest`。0.x では破壊的変更が minor に
-  乗るので、1.x での `:1` に相当する固定先は `:0.1` になる
+- 公開されるタグは `0` / `0.2` / `0.2.0` / `latest`。0.x では破壊的変更が minor に
+  乗るので、1.x での `:1` に相当する固定先は `:0.2` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
 
-### Step 7: ユーザー設定に登録する
+### ユーザー設定への登録
 
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.1": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.2": {
     "claude": true,
     "codex": false
   }
@@ -412,7 +280,9 @@ publish 後にやること（忘れやすい）:
 
 | 制約 | 影響 | 対処 |
 | --- | --- | --- |
-| option で `mounts` を切れない | codex を無効にしても volume 自体はマウントされる | symlink の張り分けで表現する（本プランの構成そのもの） |
+| option で `mounts` / `dependsOn` を切れない | codex を無効にしても volume はマウントされる。他 feature の条件付き取り込みもできない | 永続化は無条件と割り切り、option は CLI 導入だけを決める |
+| Codex がバイナリを `~/.codex/` に置く | 実体が volume の中に入るので、ビルド時に入れても 2 回目以降のコンテナで宙を指す | `postCreateCommand` で volume に無いときだけ入れる。ランチャは毎回張り直す |
+| entrypoint でのネットワーク処理はコンテナ起動をブロックする | `features test` がダウンロード中にテストを開始して落ちた | 時間のかかる処理は `postCreateCommand` に置く |
 | コピーアップは volume が空のときだけ | feature を直しても既存 volume は直らない | `docker volume rm agent-state` が唯一のリセット手段 |
 | 初回初期化時の uid が volume に焼き付く | uid の違うイメージから使うと `0700` に弾かれる | entrypoint の chown で吸収。通常は `updateRemoteUserUID` が uid 1000 に寄せるので発生しない |
 | entrypoint が root で走る保証は無い | `containerUser` が非 root だと chown が失敗する | ビルド時の準備だけが頼りになる。`mcr` 系の既定なら root なので問題ない |
@@ -423,11 +293,17 @@ publish 後にやること（忘れやすい）:
 
 ## 7. 拡張するとき
 
-agent を 1 つ足す手順は 2 箇所だけ:
+agent を 1 つ足すときに触る場所:
 
 1. `devcontainer-feature.json` の `options` に boolean を 1 つ追加
-2. `install.sh` の `agents=()` 判定に 1 行追加
+2. `install.sh` の `AGENTS=()` に名前を追加（永続化はここだけで済む）
+3. CLI を入れるなら、その CLI が**どこにバイナリを置くか**を先に確かめる
+   - `$HOME/.local/` など volume の外 → `install.sh` でビルド時に入れる
+   - `~/.<agent>/` の中 → volume と衝突するので `ensure-codex.sh` と同じ形にする
+
+3 を飛ばすと Codex で踏んだのと同じ壊れ方をする。`~/.local/bin/<cli>` の
+リンク先が volume の中を指していないか、`readlink -f` で確かめるのが早い。
 
 数が増えて boolean が並ぶのが煩わしくなったら、`"type": "string"` の
 `"agents": "claude,codex"` に寄せて `IFS=,` で分解する形に組み替える。
-その場合 `options` のスキーマ変更なので major を上げる。
+その場合 `options` のスキーマ変更なので minor を上げる（0.x では破壊的変更が minor）。

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# agent の状態 (~/.claude, ~/.codex) を名前付き volume に載せる。
+# agent の状態を名前付き volume に載せ、必要なら CLI も入れる。
 #
 # ここはイメージのビルド時に root で走る。volume はまだ存在しない。
 # このスクリプトが作った $STATE の中身と所有権が、空 volume の初回マウント時に
@@ -14,22 +14,18 @@ set -euo pipefail
 USERNAME="${_REMOTE_USER:-vscode}"
 HOME_DIR="${_REMOTE_USER_HOME:-/home/$USERNAME}"
 STATE=/var/lib/agent-state
+SHARE=/usr/local/share/macha-features
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# option は大文字の環境変数で届く。値は "true" / "false" の文字列。
-agents=()
-[ "${CLAUDE:-false}" = "true" ] && agents+=(claude)
-[ "${CODEX:-false}"  = "true" ] && agents+=(codex)
+# ~/.claude と ~/.codex は option に関わらず両方用意する。
+# option が決めるのは CLI を入れるかどうかと statusline を当てるかどうかだけ。
+AGENTS=(claude codex)
 
-if [ ${#agents[@]} -eq 0 ]; then
-    echo "macha-features: 有効な agent が無いので何もしない"
-    exit 0
-fi
-
-echo "macha-features: ${agents[*]} を $STATE に載せる (user=$USERNAME)"
+echo "macha-features: $STATE を用意する (user=$USERNAME)"
 
 install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE"
 
-for name in "${agents[@]}"; do
+for name in "${AGENTS[@]}"; do
     install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE/$name"
 
     # ベースイメージが既に設定を持っているなら volume 側へ移してから貼り替える
@@ -43,41 +39,49 @@ for name in "${agents[@]}"; do
     chown -h "$USERNAME:$USERNAME" "$HOME_DIR/.$name"
 done
 
-# _REMOTE_USER はビルド時にしか渡らないので、値を焼き込んで entrypoint を生成する。
-# entrypoint はコンテナ起動ごとに root で、volume がマウントされた後に走る。
-install -d /usr/local/share/agent-state
-{
-    echo '#!/usr/bin/env bash'
-    echo 'set -eu'
-    printf 'USERNAME=%q\n' "$USERNAME"
-    printf 'STATE=%q\n'    "$STATE"
-    printf 'AGENTS=(%s)\n' "${agents[*]}"
-    cat <<'INNER'
+# ---- CLI ---------------------------------------------------------------
+# どちらのインストーラも $HOME/.local/ に入れるので、root ではなく
+# remote user で走らせないと /root の下に入ってしまう。
+run_as_user() {
+    su - "$USERNAME" -c "$1"
+}
 
-uid=$(id -u "$USERNAME")
-gid=$(id -g "$USERNAME")
-
-# 既に中身のある volume を掴んだ場合、コピーアップは起きない。
-# 後から agent を有効化したときのためにサブディレクトリを補う。
-for name in "${AGENTS[@]}"; do
-    [ -d "$STATE/$name" ] || mkdir -p "$STATE/$name"
-done
-
-# 別 uid のイメージが初期化した volume と、直前の行が root で作ったばかりの
-# サブディレクトリの両方に備える。$STATE だけを見ると後者を取りこぼす。
-# bind mount と違いホスト側に実体が無いので chown して差し支えない。
-if [ "$(id -u)" = 0 ]; then
-    for dir in "$STATE" "${AGENTS[@]/#/$STATE/}"; do
-        [ -d "$dir" ] || continue
-        [ "$(stat -c %u "$dir")" = "$uid" ] || chown -R "$uid:$gid" "$dir"
-        chmod 700 "$dir"
-    done
+if [ "${CLAUDE:-false}" = "true" ]; then
+    echo "macha-features: Claude Code CLI を入れる"
+    run_as_user 'curl -fsSL https://claude.ai/install.sh | bash'
 fi
 
-# 複数 feature の entrypoint は数珠つなぎに呼ばれるので、これを落とすと後続が動かない
-exec "$@"
-INNER
-} > /usr/local/share/agent-state/entrypoint.sh
-chmod +x /usr/local/share/agent-state/entrypoint.sh
+# Codex はここで入れない。インストーラがバイナリ本体を ~/.codex/packages/ に置く
+# ため、実体が volume の中に入る。ビルド時に入れても中身が volume に届くのは
+# コピーアップが起きる初回だけで、2 回目以降のコンテナではランチャが宙を指す。
+# 代わりに entrypoint が「volume に無ければ入れる」を毎起動で見る。
+
+# ~/.local/bin は Ubuntu の ~/.profile が拾うが、非ログインシェルでは読まれない
+cat > /etc/profile.d/macha-features-path.sh <<'PROFILE'
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+PROFILE
+chmod 644 /etc/profile.d/macha-features-path.sh
+
+# ---- entrypoint と statusline ------------------------------------------
+# statusline スクリプトは volume の外に置く。volume に置くとコピーアップが
+# 初回しか起きず、更新が 2 回目以降のコンテナに届かないため。
+install -d "$SHARE"
+install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
+install -m 755 "$SRC/statusline/claude.sh"   "$SHARE/claude-statusline.sh"
+install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
+
+# _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む
+{
+    printf 'USERNAME=%q\n' "$USERNAME"
+    printf 'HOME_DIR=%q\n' "$HOME_DIR"
+    printf 'STATE=%q\n'    "$STATE"
+    printf 'AGENTS=(%s)\n' "${AGENTS[*]}"
+    printf 'CLAUDE=%q\n'   "${CLAUDE:-false}"
+    printf 'CODEX=%q\n'    "${CODEX:-false}"
+} > "$SHARE/config"
+chmod 644 "$SHARE/config"
 
 echo "macha-features: 完了"
