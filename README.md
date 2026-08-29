@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `statusline-command.sh`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `keybindings.json`, `statusline-command.sh`)
 
 ## Setup
 

@@ -21,7 +21,7 @@
 ## 技術スタック
 
 - 言語: Bash
-- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`statusline-command.sh`）
+- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`）
 
 ## セットアップ
 

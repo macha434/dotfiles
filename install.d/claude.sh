@@ -12,8 +12,14 @@
 # 承認履歴など) だが、vscode.sh の settings.json と同じく install_file で
 # 単純に上書きする。再実行すると Claude Code 自身が書いた分は消えるので、
 # その運用で困る場合はこの行を外して手動管理に切り替える。
+#
+# keybindings.json はモデルピッカーの enter を「このセッションのみ」に倒す。
+# 既定の enter は選んだモデルを settings.json へ書き戻すため、symlink 越しに
+# このリポジトリが汚れる。s キー (既定) も従来どおり使える。
 
 install_file "$DOTFILES_ROOT/claude/statusline-command.sh" \
              "$HOME/.claude/statusline-command.sh"
 install_file "$DOTFILES_ROOT/claude/settings.json" \
              "$HOME/.claude/settings.json"
+install_file "$DOTFILES_ROOT/claude/keybindings.json" \
+             "$HOME/.claude/keybindings.json"
