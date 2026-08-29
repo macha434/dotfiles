@@ -1,0 +1,31 @@
+# Codex CLI のユーザー設定。claude/settings.json と対になる内容にしている。
+#
+# 検証は codex --strict-config doctor で行える。未知のキーがあると
+# 「✗ config」になるので、キー名を変えたときはこれを通すこと。
+
+# claude/settings.json の model: "sonnet" に対応する。
+# ただし Claude のようなファミリーエイリアス (常に最新へ解決される) は
+# 無いので、モデル ID を直接指定する。新しい版が出たらここを更新する。
+model = "gpt-5.3-codex"
+
+# alwaysThinkingEnabled: true の代わり。Codex は常に推論するため
+# 有無ではなく深さの指定になる。minimal / low / medium / high / xhigh から選ぶ。
+model_reasoning_effort = "high"
+
+# permissions.defaultMode: "auto" に対応する。Codex では「何ができるか」
+# (sandbox_mode) と「いつ訊くか」(approval_policy) が別々の設定になっている。
+# on-request はモデルが必要と判断したときだけ確認を求める。
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+# attribution.commit / .pr を空文字にしたのと同じ意図。
+# 既定では "Co-authored-by: Codex <noreply@openai.com>" と
+# "Generated with [Codex](https://openai.com/codex/)." が付く。
+commit_attribution_enabled = false
+
+[tui]
+# editorMode: "vim" に対応する。
+vim_mode_default = true
+
+# fastMode: false に対応する。Fast mode を既定にしない。
+fast_default_opt_out = true

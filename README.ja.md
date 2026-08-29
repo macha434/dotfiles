@@ -21,7 +21,7 @@
 ## 技術スタック
 
 - 言語: Bash
-- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`）
+- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`）、Codex CLI（`config.toml`）
 
 ## セットアップ
 
@@ -84,6 +84,7 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 | `install.d/<名前>.sh` | ツール1つ分の配置手順。ファイル名がコマンドラインで指定できる名前になる |
 | `vscode/` | VS Code の設定ファイルの実体 |
 | `claude/` | Claude Code の設定ファイルの実体。`settings.json` とステータスラインのスクリプトを含む |
+| `codex/` | Codex CLI の `config.toml`。`claude/settings.json` と対になる内容にしている |
 | `features/` | GHCR に publish する devcontainer feature とそのテスト。`install.sh` は関知しない |
 | `docs/` | 設計メモと実装プラン |
 | `features/assets.tsv` | packaging 前に feature へ複製する dotfiles の対応表 |
