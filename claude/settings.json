@@ -1,7 +1,9 @@
 {
   "model": "sonnet",
   "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
   "editorMode": "vim",
+  "tui": "fullscreen",
   "fastMode": false,
   "fastModePerSessionOptIn": true,
   "attribution": {
