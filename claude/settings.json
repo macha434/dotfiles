@@ -1,0 +1,11 @@
+{
+  "model": "sonnet",
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-command.sh"
+  }
+}

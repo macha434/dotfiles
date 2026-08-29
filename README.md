@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`statusline-command.sh`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `statusline-command.sh`)
 
 ## Setup
 
@@ -83,7 +83,7 @@ Layout:
 | `lib/common.sh` | OS detection, Windows path resolution, `install_file`, logging |
 | `install.d/<name>.sh` | Installs one tool. The file name is the name accepted on the command line |
 | `vscode/` | VS Code's files themselves |
-| `claude/` | Claude Code's files themselves, including the status line script |
+| `claude/` | Claude Code's files themselves, including `settings.json` and the status line script |
 | `features/` | Dev container features published to GHCR, with their tests. Not touched by `install.sh` |
 | `docs/` | Design notes and implementation plans |
 | `features/assets.tsv` | Which dotfiles get copied into a feature before packaging, and where |
@@ -94,6 +94,9 @@ To add a tool, drop its files in a directory and add `install.d/<name>.sh`. `ins
 
 **Q. Why does `settings.json` get rewritten every time on a Windows destination?**  
 A. Extensions write to it. VSCodeVim with `vim.statusBarColorControl` enabled adds `workbench.colorCustomizations` as you switch modes, so the installed file diverges from this repository. The installer overwrites it, and the backup is taken only on the first run so backups do not pile up.
+
+**Q. Does re-running the installer wipe out what Claude Code itself wrote to `~/.claude/settings.json` (e.g. MCP server approvals)?**  
+A. Yes. `claude/settings.json` is installed the same way as VS Code's `settings.json`: `install_file` overwrites the destination whenever it differs from the repository copy. If that's a problem, drop the `install_file` line for it in `install.d/claude.sh` and manage `~/.claude/settings.json` by hand instead.
 
 **Q. Can it run from PowerShell?**  
 A. Not yet. `install.sh` covers Linux, macOS, WSL and Git Bash.
