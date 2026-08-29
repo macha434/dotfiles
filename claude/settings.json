@@ -1,6 +1,7 @@
 {
   "model": "sonnet",
   "alwaysThinkingEnabled": true,
+  "editorMode": "vim",
   "permissions": {
     "defaultMode": "auto"
   },
