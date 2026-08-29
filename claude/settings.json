@@ -1,0 +1,19 @@
+{
+  "model": "sonnet",
+  "alwaysThinkingEnabled": true,
+  "editorMode": "vim",
+  "fastMode": false,
+  "fastModePerSessionOptIn": true,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-command.sh"
+  }
+}

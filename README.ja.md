@@ -21,7 +21,7 @@
 ## 技術スタック
 
 - 言語: Bash
-- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`statusline-command.sh`）
+- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`）
 
 ## セットアップ
 
@@ -83,7 +83,7 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 | `lib/common.sh` | OS 判別、Windows のパス解決、`install_file`、ログ出力 |
 | `install.d/<名前>.sh` | ツール1つ分の配置手順。ファイル名がコマンドラインで指定できる名前になる |
 | `vscode/` | VS Code の設定ファイルの実体 |
-| `claude/` | Claude Code の設定ファイルの実体。ステータスラインのスクリプトを含む |
+| `claude/` | Claude Code の設定ファイルの実体。`settings.json` とステータスラインのスクリプトを含む |
 | `features/` | GHCR に publish する devcontainer feature とそのテスト。`install.sh` は関知しない |
 | `docs/` | 設計メモと実装プラン |
 | `features/assets.tsv` | packaging 前に feature へ複製する dotfiles の対応表 |
@@ -94,6 +94,9 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 
 **Q. Windows 側の `settings.json` が毎回書き換えられるのはなぜか。**  
 A. 拡張機能が書き込むためである。VSCodeVim の `vim.statusBarColorControl` を有効にしていると、モードを切り替えるたびに `workbench.colorCustomizations` が追記され、このリポジトリの内容とズレる。インストーラはこれを上書きする。退避は初回だけ行うので、バックアップが溜まることはない。
+
+**Q. インストーラを再実行すると、Claude Code 自身が `~/.claude/settings.json` に書いた内容（MCP サーバーの承認履歴など）は消えるか。**  
+A. 消える。`claude/settings.json` は VS Code の `settings.json` と同じ扱いで、`install_file` がリポジトリ側と差分があれば設置先を上書きする。これが困るなら `install.d/claude.sh` からこの行を外し、`~/.claude/settings.json` は手動管理に切り替えてほしい。
 
 **Q. PowerShell から実行できるか。**  
 A. 現時点ではできない。`install.sh` が Linux / macOS / WSL / Git Bash をカバーしている。
