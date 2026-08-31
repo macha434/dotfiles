@@ -1,0 +1,42 @@
+# Codex CLI のユーザー設定。claude/settings.json と対になる内容にしている。
+#
+# 検証は次で行う。--strict-config は exec でしか効かない (doctor では未知キーが
+# 素通りする) ので、doctor ではなく exec を使うこと。
+#   codex --strict-config exec --skip-git-repo-check hi
+# 未知のトップレベルキーは `unknown configuration field` で落ちる。ただし [tui] は
+# 未知キーを黙って無視するため、[tui] 側は誤字に気づけない。
+
+# claude/settings.json の model: "sonnet" に対応する。
+# Claude のようなファミリーエイリアス (常に最新へ解決される) は無いので、
+# モデル ID を直接指定する。新しい版が出たらここを更新する。
+model = "gpt-5.6-terra"
+
+# alwaysThinkingEnabled: true + effortLevel: "high" に対応する。
+# Codex は常に推論するため、有無ではなく深さの指定になる。
+model_reasoning_effort = "high"
+
+# permissions.defaultMode: "auto" に対応する。Codex では「何ができるか」
+# (sandbox_mode) と「いつ訊くか」(approval_policy) が別々の設定になっている。
+# on-request はモデルが必要と判断したときだけ確認を求める。
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[tui]
+# editorMode: "vim" に対応する。
+vim_mode_default = true
+
+# claude/statusline-command.sh の表示に寄せている。項目を選ぶだけの仕組みで、
+# 並び順や書式は指定できない。対応は次のとおり。
+#   model-with-reasoning … モデル ID と effort (スクリプトの 2 行目前半)
+#   fast-mode            … fast mode の状態 (同 2 行目)
+#   context-used         … コンテキスト使用率 (同 2 行目)
+#   five-hour-limit      … 5 時間窓のレート制限 (同 3 行目)
+#   weekly-limit         … 7 日窓のレート制限 (同 3 行目)
+# vim モード (同 1 行目) に相当する項目は無い。
+status_line = [
+    "model-with-reasoning",
+    "fast-mode",
+    "context-used",
+    "five-hour-limit",
+    "weekly-limit",
+]

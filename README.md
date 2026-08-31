@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `keybindings.json`, `statusline-command.sh`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `keybindings.json`, `statusline-command.sh`), Codex CLI (`config.toml`)
 
 ## Setup
 
@@ -84,6 +84,7 @@ Layout:
 | `install.d/<name>.sh` | Installs one tool. The file name is the name accepted on the command line |
 | `vscode/` | VS Code's files themselves |
 | `claude/` | Claude Code's files themselves, including `settings.json` and the status line script |
+| `codex/` | Codex CLI's `config.toml`, kept in step with `claude/settings.json` |
 | `features/` | Dev container features published to GHCR, with their tests. Not touched by `install.sh` |
 | `docs/` | Design notes and implementation plans |
 | `features/assets.tsv` | Which dotfiles get copied into a feature before packaging, and where |
