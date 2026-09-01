@@ -3,6 +3,7 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "editorMode": "vim",
+  "theme": "dark",
   "tui": "fullscreen",
   "fastMode": false,
   "fastModePerSessionOptIn": true,
