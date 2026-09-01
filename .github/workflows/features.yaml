@@ -10,6 +10,7 @@ on:
       - 'claude/statusline-command.sh'
       - 'claude/settings.json'
       - 'claude/keybindings.json'
+      - 'codex/config.toml'
   push:
     branches: [main]
     paths:
@@ -18,6 +19,7 @@ on:
       - 'claude/statusline-command.sh'
       - 'claude/settings.json'
       - 'claude/keybindings.json'
+      - 'codex/config.toml'
 
 jobs:
   test:
