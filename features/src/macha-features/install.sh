@@ -66,6 +66,22 @@ fi
 ln -sfn "$CLAUDE_JSON_STATE" "$CLAUDE_JSON"
 chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
 
+# ---- jq ------------------------------------------------------------------
+# entrypoint.sh が毎起動 settings.json をテンプレートとマージするのに使う。
+# base image が入れている前提を置かず、ここで確実に用意する。無いままだと
+# entrypoint 側は statusLine だけの最小構成にフォールバックし、model や
+# editorMode などは当たらない。
+if [ "${CLAUDE:-false}" = "true" ] && ! command -v jq >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "macha-features: jq を入れる"
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends jq
+        rm -rf /var/lib/apt/lists/*
+    else
+        echo "macha-features: jq が無く apt-get も無いので入れられない。settings.json は statusLine しか当たらない" >&2
+    fi
+fi
+
 # ---- CLI ---------------------------------------------------------------
 # どちらのインストーラも $HOME/.local/ に入れるので、root ではなく
 # remote user で走らせないと /root の下に入ってしまう。

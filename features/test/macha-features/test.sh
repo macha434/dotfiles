@@ -44,6 +44,10 @@ check "settings.json に statusLine が入っている" \
 check "settings.json に refreshInterval 1 が入っている" \
     bash -c '[ "$(jq -r .statusLine.refreshInterval /var/lib/agent-state/claude/settings.json)" = 1 ]'
 
+# jq は settings.json のテンプレートマージに要る。base image 任せにせず
+# install.sh が入れる (features/src/macha-features/install.sh 参照)。
+check "jq が入っている" command -v jq
+
 # --- settings.json / keybindings.json はテンプレート全体を反映する ---
 # claude/settings.json 側の値と 1:1 で見る。値そのものを変えたら、この対応も直すこと。
 check "settings.json に model が入っている" \

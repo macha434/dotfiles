@@ -111,7 +111,10 @@ MCP サーバーの承認履歴）は残り、テンプレートにあるキー�
 マージ後に強制上書きする。テンプレートの `statusLine.command` は host 向けの
 `~/.claude/statusline-command.sh` を指しており、このイメージには存在しないため。
 `jq` が無い環境ではテンプレートとのマージができないので、`settings.json` が無いときに
-`statusLine` だけの最小構成を書いて警告を出す。
+`statusLine` だけの最小構成を書いて警告を出す。この経路に頼らないよう、`jq` 自体は
+`install.sh`（ビルド時、root）が `apt-get` で入れる。base image が既に持っていれば
+何もしない。`apt-get` の無い base image では入れられない旨を警告するだけで、ビルドは
+落とさない。
 
 **keybindings.json** は Claude Code 自身が書き換えることの無い静的な設定なので、
 settings.json と違ってマージは要らない。`~/.claude/keybindings.json` を
