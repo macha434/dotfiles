@@ -24,13 +24,16 @@ check "config が両方 true で焼かれている" \
     bash -c 'grep -q "^CLAUDE=true$" /usr/local/share/macha-features/config \
              && grep -q "^CODEX=true$" /usr/local/share/macha-features/config'
 
-# codex/config.toml は claude/settings.json と違い、volume が空のとき (= 初回) だけ
-# 置かれる。features/src/macha-features/install.sh 参照。
+# codex/config.toml は claude/settings.json と違い、$STATE/codex/config.toml に
+# 無いときだけ ensure-codex.sh (postCreate) が置く。
+# features/src/macha-features/ensure-codex.sh 参照。
 check "codex の config.toml がある" test -f /var/lib/agent-state/codex/config.toml
 check "config.toml に model が入っている" \
     bash -c 'grep -q "^model = \"gpt-5.6-terra\"\$" /var/lib/agent-state/codex/config.toml'
 check "config.toml に approval_policy が入っている" \
     bash -c 'grep -q "^approval_policy = \"on-request\"\$" /var/lib/agent-state/codex/config.toml'
+check "config.toml に sandbox_mode が入っている" \
+    bash -c 'grep -q "^sandbox_mode = \"danger-full-access\"\$" /var/lib/agent-state/codex/config.toml'
 check "config.toml に vim_mode_default が入っている" \
     bash -c 'grep -q "^vim_mode_default = true\$" /var/lib/agent-state/codex/config.toml'
 

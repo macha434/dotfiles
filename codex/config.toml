@@ -18,12 +18,21 @@ model_reasoning_effort = "high"
 # permissions.defaultMode: "auto" に対応する。Codex では「何ができるか」
 # (sandbox_mode) と「いつ訊くか」(approval_policy) が別々の設定になっている。
 # on-request はモデルが必要と判断したときだけ確認を求める。
+#
+# sandbox_mode は明示的に danger-full-access にしている。read-only /
+# workspace-write と違いサンドボックスによる制限が一切無く、ワークスペース外の
+# ファイルやネットワークにも触れる。approval_policy はそれとは独立なので、
+# on-request のままなら確認自体は要求されるが、承認された操作の範囲を
+# サンドボックスが縛らなくなる点に注意。
 approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 
 [tui]
 # editorMode: "vim" に対応する。
 vim_mode_default = true
+
+# danger-full-access を選ぶと出る警告を、明示的に選んでいるので毎回は要らない。
+hide_full_access_warning = true
 
 # claude/statusline-command.sh の表示に寄せている。項目を選ぶだけの仕組みで、
 # 並び順や書式は指定できない。対応は次のとおり。
