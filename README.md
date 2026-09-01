@@ -102,6 +102,9 @@ A. Yes. `claude/settings.json` is installed the same way as VS Code's `settings.
 **Q. Can it run from PowerShell?**  
 A. Not yet. `install.sh` covers Linux, macOS, WSL and Git Bash.
 
+**Q. The Claude Code status line shows, but every value is a placeholder (`(vim off)`, `ctx --`, `5h --`) — why?**  
+A. `claude/statusline-command.sh` reads the session JSON with `jq`. Without it, `jq`'s errors are swallowed (`2>/dev/null`) and the script still exits 0, so nothing looks broken — it just never has real data to show. `./install.sh claude` warns when `jq` is missing; install it and the same values start showing up without any other change.
+
 ## License
 
 No license file is present.
