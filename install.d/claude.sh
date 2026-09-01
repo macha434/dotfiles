@@ -23,3 +23,11 @@ install_file "$DOTFILES_ROOT/claude/settings.json" \
              "$HOME/.claude/settings.json"
 install_file "$DOTFILES_ROOT/claude/keybindings.json" \
              "$HOME/.claude/keybindings.json"
+
+# statusline-command.sh は jq でセッション情報の JSON を読む。無いと jq の
+# エラーが `2>/dev/null` で握りつぶされ、ステータスラインは何も落ちずに
+# プレースホルダー (vim off / ctx -- / 5h --) だけを表示し続ける。実害は
+# ここでしか出ないので、配置のタイミングで気づけるように警告しておく。
+if [ "${DRY_RUN:-0}" != 1 ] && ! command -v jq >/dev/null 2>&1; then
+    warn "jq が無い。ステータスラインは値が入らずプレースホルダーのままになる"
+fi

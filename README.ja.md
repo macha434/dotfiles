@@ -102,6 +102,9 @@ A. 消える。`claude/settings.json` は VS Code の `settings.json` と同じ�
 **Q. PowerShell から実行できるか。**  
 A. 現時点ではできない。`install.sh` が Linux / macOS / WSL / Git Bash をカバーしている。
 
+**Q. Claude Code のステータスラインは表示されるが、値がすべてプレースホルダー（`(vim off)`、`ctx --`、`5h --`）のままなのはなぜか。**  
+A. `claude/statusline-command.sh` はセッション情報の JSON を `jq` で読んでいる。`jq` が無いとそのエラーは `2>/dev/null` で握りつぶされ、スクリプトは exit 0 のまま終わるので、見た目上は何も壊れていないように見える。ただ実際の値が入ることは無い。`./install.sh claude` は `jq` が無いと警告するので、それに従って `jq` を入れれば他は何も変えずに値が出るようになる。
+
 ## ライセンス
 
 ライセンスファイルは置いていない。
