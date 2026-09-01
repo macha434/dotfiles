@@ -280,7 +280,7 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.5` / `0.5.1` / `latest`。0.x では破壊的変更が minor に
+- 公開されるタグは `0` / `0.5` / `0.5.2` / `latest`。0.x では破壊的変更が minor に
   乗るので、1.x での `:1` に相当する固定先は `:0.5` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
