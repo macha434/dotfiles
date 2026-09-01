@@ -1,6 +1,6 @@
 {
     "id": "macha-features",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "name": "Persistent agent state volume",
     "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",

@@ -21,12 +21,15 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # option が決めるのは CLI を入れるかどうかと statusline を当てるかどうかだけ。
 AGENTS=(claude codex)
 
-# statusline スクリプトは dotfiles 本体 (claude/) が正で、features/sync-assets.sh が
-# ここへ複製する。tarball には feature 配下しか入らないため実体のコピーが要る。
-if [ ! -f "$SRC/claude/statusline-command.sh" ]; then
-    echo "macha-features: claude/statusline-command.sh が無い。features/sync-assets.sh を先に実行すること" >&2
-    exit 1
-fi
+# statusline スクリプト・settings.json・keybindings.json は dotfiles 本体 (claude/) が
+# 正で、features/sync-assets.sh がここへ複製する。tarball には feature 配下しか入らない
+# ため実体のコピーが要る。
+for f in statusline-command.sh settings.json keybindings.json; do
+    if [ ! -f "$SRC/claude/$f" ]; then
+        echo "macha-features: claude/$f が無い。features/sync-assets.sh を先に実行すること" >&2
+        exit 1
+    fi
+done
 
 
 echo "macha-features: $STATE を用意する (user=$USERNAME)"
@@ -46,6 +49,38 @@ for name in "${AGENTS[@]}"; do
     ln -sfn "$STATE/$name" "$HOME_DIR/.$name"
     chown -h "$USERNAME:$USERNAME" "$HOME_DIR/.$name"
 done
+
+# ~/.claude (このループで volume 化した) とは別に、Claude Code は
+# oauthAccount を含むグローバル設定を ~/.claude.json という、ホーム直下の
+# 別ファイルにも持つ。~/.claude/.credentials.json 自体は上のループで volume
+# に乗るが、ログイン判定は oauthAccount の有無も見ているため、この
+# ファイルを見落とすとコンテナを作り直すたびに再ログインを求められる
+# (実機で確認済み)。ディレクトリと同じ考え方でファイルとして symlink する。
+CLAUDE_JSON="$HOME_DIR/.claude.json"
+CLAUDE_JSON_STATE="$STATE/claude/.claude.json"
+if [ -f "$CLAUDE_JSON" ] && [ ! -L "$CLAUDE_JSON" ]; then
+    cp -a "$CLAUDE_JSON" "$CLAUDE_JSON_STATE"
+    rm -f "$CLAUDE_JSON"
+    chown "$USERNAME:$USERNAME" "$CLAUDE_JSON_STATE"
+fi
+ln -sfn "$CLAUDE_JSON_STATE" "$CLAUDE_JSON"
+chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
+
+# ---- jq ------------------------------------------------------------------
+# entrypoint.sh が毎起動 settings.json をテンプレートとマージするのに使う。
+# base image が入れている前提を置かず、ここで確実に用意する。無いままだと
+# entrypoint 側は statusLine だけの最小構成にフォールバックし、model や
+# editorMode などは当たらない。
+if [ "${CLAUDE:-false}" = "true" ] && ! command -v jq >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "macha-features: jq を入れる"
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends jq
+        rm -rf /var/lib/apt/lists/*
+    else
+        echo "macha-features: jq が無く apt-get も無いので入れられない。settings.json は statusLine しか当たらない" >&2
+    fi
+fi
 
 # ---- CLI ---------------------------------------------------------------
 # どちらのインストーラも $HOME/.local/ に入れるので、root ではなく
@@ -73,12 +108,16 @@ esac
 PROFILE
 chmod 644 /etc/profile.d/macha-features-path.sh
 
-# ---- entrypoint と statusline ------------------------------------------
-# statusline スクリプトは volume の外に置く。volume に置くとコピーアップが
-# 初回しか起きず、更新が 2 回目以降のコンテナに届かないため。
+# ---- entrypoint と claude の設定テンプレート ----------------------------
+# statusline スクリプト・settings.json・keybindings.json は volume の外に置く。
+# volume に置くとコピーアップが初回しか起きず、更新が 2 回目以降のコンテナに
+# 届かないため。settings.json は entrypoint が毎起動 jq でマージする際の
+# テンプレートとして、keybindings.json は symlink 先として使う。
 install -d "$SHARE"
 install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
 install -m 755 "$SRC/claude/statusline-command.sh" "$SHARE/claude-statusline.sh"
+install -m 644 "$SRC/claude/settings.json"    "$SHARE/claude-settings.json"
+install -m 644 "$SRC/claude/keybindings.json" "$SHARE/claude-keybindings.json"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む

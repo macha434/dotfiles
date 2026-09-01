@@ -54,15 +54,15 @@ volume "agent-state"
 
 | フェーズ | 実行者 | やること |
 | --- | --- | --- |
-| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。Claude Code CLI。entrypoint と statusline の配置 |
-| 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。`statusLine` をマージする。`exec "$@"` |
+| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。`~/.claude.json` の symlink。Claude Code CLI。entrypoint と settings.json/keybindings.json テンプレートの配置 |
+| 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。settings.json にテンプレート全体をマージし statusLine だけイメージ側パスへ差し替える。keybindings.json はイメージ側への symlink。`exec "$@"` |
 | 作成後 `ensure-codex.sh` | remote user（`postCreateCommand`） | Codex CLI を volume に無いときだけ入れ、ランチャを張り直す |
 
 ## 4. リポジトリ構成
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.3`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.4`**。
 
 ```
 features/
@@ -105,10 +105,10 @@ features/
 
 | ファイル | いつ / 誰が | 役割 |
 | --- | --- | --- |
-| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink。Claude Code CLI。entrypoint と statusline の配置 |
-| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。`statusLine` 設定のマージ |
+| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.claude.json`）。Claude Code CLI。entrypoint と settings.json/keybindings.json/statusline のテンプレート配置 |
+| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。settings.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
-| `src/macha-features/claude/statusline-command.sh` | — | ステータスラインの本体。ルートの `claude/` からの生成物。パスの並びもルートに揃えてある |
+| `src/macha-features/claude/{settings.json,keybindings.json,statusline-command.sh}` | — | いずれもルートの `claude/` からの生成物。パスの並びもルートに揃えてある |
 | `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
 | `features/assets.tsv` | — | 複製元と複製先の対応表。増やすときはここに 1 行 |
 
@@ -117,16 +117,18 @@ features/
 **ビルド時でないといけないもの**: volume のコピーアップに乗せる中身と所有権。これが
 この feature の肝で、実行時の chown が要らない理由。
 
-**起動ごとでないといけないもの**: `~/.claude/settings.json` への `statusLine` 設定。
+**起動ごとでないといけないもの**: `~/.claude/settings.json` へのテンプレートマージ。
 volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか届かない。
-スクリプト本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
-settings.json 側は不変なパスを指すだけでよく、陳腐化しない。
+テンプレート本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
+settings.json 側は不変なパスを指すだけでよく、陳腐化しない。`keybindings.json` は
+Claude Code 自身が書き換えないので、マージではなくこのテンプレートへの symlink で済む。
 
-**リポジトリルートから複製しないといけないもの**: statusline スクリプト。dotfiles として
-ホストにも配置したいので正は `claude/statusline-command.sh` に置くが、feature の tarball には
-feature ディレクトリ配下しか入らない。しかも packaging は symlink を symlink のまま tar に
-入れる（実測で確認）ので、リポジトリ内 symlink で共有すると公開された feature が宙を指す
-リンクを抱える。そのため `features/sync-assets.sh` が実体を複製し、feature 側は gitignore する。
+**リポジトリルートから複製しないといけないもの**: settings.json・keybindings.json・
+statusline スクリプト。dotfiles としてホストにも配置したいので正は `claude/` 配下に置くが、
+feature の tarball には feature ディレクトリ配下しか入らない。しかも packaging は symlink を
+symlink のまま tar に入れる（実測で確認）ので、リポジトリ内 symlink で共有すると公開された
+feature が宙を指すリンクを抱える。そのため `features/sync-assets.sh` が実体を複製し、
+feature 側は gitignore する。
 
 複製する組は `features/assets.tsv` の対応表 1 箇所にまとめてある。今後ファイルが増えても
 ここに 1 行足すだけでよい。ただし追随が要る場所が 2 つある。**workflow の `paths:`**（複製元が
@@ -268,8 +270,8 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.3` / `0.3.0` / `latest`。0.x では破壊的変更が minor に
-  乗るので、1.x での `:1` に相当する固定先は `:0.3` になる
+- 公開されるタグは `0` / `0.4` / `0.4.0` / `latest`。0.x では破壊的変更が minor に
+  乗るので、1.x での `:1` に相当する固定先は `:0.4` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
 
@@ -278,7 +280,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.3": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.4": {
     "claude": true,
     "codex": false
   }
