@@ -7,9 +7,31 @@
 # postCreate なら remote user で走り、devcontainer が完了を待ってくれる。
 set -eu
 
-. /usr/local/share/macha-features/config
+SHARE=/usr/local/share/macha-features
+# shellcheck source=/dev/null
+. "$SHARE/config"
 
 [ "${CODEX:-false}" = "true" ] || exit 0
+
+# config.toml は $STATE/codex/config.toml に無いときだけ置く。build 時 (install.sh)
+# ではなくここでやるのが要点。install.sh は volume がまだ存在しない段階で走るので
+# 「無いから置く」は image 側の話にしかならず、volume の初回コピーアップに委ねる
+# 形になる。だが volume が (claude/ だけでも) 既に何か持っていればコピーアップ
+# 自体が起きないため、config.toml は永久に届かない。ここは volume マウント後・
+# コンテナ作成のたびに走るので、$STATE/codex/config.toml の実際の有無を見て
+# 判断できる。
+#
+# 毎回上書きしないのは、Codex CLI が config.toml の一部 (キーバインドの
+# カスタマイズなど) を自分で書き戻すため。テンプレートを更新しても既存の
+# config.toml には届かないので、反映したいときはそのファイルを消せばよい
+# (volume ごと消す必要は無い)。例:
+#   docker run --rm -v agent-state:/data alpine rm -f /data/codex/config.toml
+# のあと、コンテナ内でこのスクリプトを再実行するか、コンテナを作り直す。
+cfg="$STATE/codex/config.toml"
+if [ ! -e "$cfg" ] && [ -f "$SHARE/codex-config.toml" ]; then
+    echo "macha-features: codex/config.toml が volume に無いので置く"
+    install -m 644 "$SHARE/codex-config.toml" "$cfg"
+fi
 
 pkg="$STATE/codex/packages/standalone/current/bin/codex"
 

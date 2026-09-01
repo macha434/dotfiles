@@ -92,16 +92,32 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 ### config.toml
 
 正は**リポジトリルートの [`codex/config.toml`](../../../codex/) 側**で、[`claude/settings.json`](../../../claude/settings.json)
-と対になる内容にしている。feature 用のコピーは他と同じく `features/sync-assets.sh` が生成する。
+と対になる内容にしている。feature 用のコピーは他と同じく `features/sync-assets.sh` が生成し、
+`install.sh` が `$SHARE/codex-config.toml` としてイメージ側に置く。
 
-`claude/settings.json` と違い、**volume が空のとき（＝初回起動）だけ** `install.sh` が
-テンプレートを置く。毎起動上書きしない。Codex CLI は config.toml の一部（キーバインドの
-カスタマイズなど）を自分で書き戻すため、settings.json と同じように毎起動テンプレートを
-当てると、その変更が消えてしまう。TOML 用の jq に相当するマージツールも無いため、
-`~/.claude.json` と同じ「初回だけ配置」方式にした。
+`claude/settings.json` と違い、**`$STATE/codex/config.toml` に無いときだけ**
+`ensure-codex.sh`（postCreate、volume マウント後）が置く。毎起動上書きしない。Codex CLI は
+config.toml の一部（キーバインドのカスタマイズなど）を自分で書き戻すため、settings.json と
+同じように毎起動テンプレートを当てると、その変更が消えてしまう。TOML 用の jq に相当する
+マージツールも無いため、この「無いときだけ置く」方式にした。
 
-この方式の裏返しとして、**テンプレートを更新しても既存の volume には届かない**。
-反映したいときは `docker volume rm agent-state` でリセットすること。
+配置を `install.sh`（ビルド時）ではなく `ensure-codex.sh`（postCreate）でやっているのが
+要点。ビルド時は volume がまだ存在しないので、「無いから置く」は image 側にしか反映されず、
+volume の初回コピーアップに委ねる形になる。だが volume が（`claude/` だけでも）既に何か
+持っていればコピーアップ自体が起きないため、`codex/config.toml` は永久に届かない。
+`ensure-codex.sh` は volume マウント後・コンテナ作成のたびに走るので、実際の volume の
+状態を見て判断できる。
+
+このおかげで、**Codex の分だけをリセットしたいとき、volume ごと消す必要は無い**。
+`~/.claude.json` を巻き込みたくない（＝ Claude Code の再ログインを避けたい）場合はこちら。
+
+```bash
+docker run --rm -v agent-state:/data alpine rm -f /data/codex/config.toml
+```
+
+のあとコンテナ内で `bash /usr/local/share/macha-features/ensure-codex.sh` を実行するか、
+コンテナを作り直す（`postCreateCommand` はコンテナ作成のたびに走るので、単なる再起動では
+発火しない）。
 
 ## settings.json / keybindings.json / ステータスライン
 
