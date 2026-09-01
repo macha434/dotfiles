@@ -30,6 +30,10 @@ for f in statusline-command.sh settings.json keybindings.json; do
         exit 1
     fi
 done
+if [ ! -f "$SRC/codex/config.toml" ]; then
+    echo "macha-features: codex/config.toml が無い。features/sync-assets.sh を先に実行すること" >&2
+    exit 1
+fi
 
 
 echo "macha-features: $STATE を用意する (user=$USERNAME)"
@@ -65,6 +69,18 @@ if [ -f "$CLAUDE_JSON" ] && [ ! -L "$CLAUDE_JSON" ]; then
 fi
 ln -sfn "$CLAUDE_JSON_STATE" "$CLAUDE_JSON"
 chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
+
+# Codex の config.toml は claude/settings.json と違い、volume が空のとき (= 初回)
+# だけ置く。settings.json は Claude Code 側が壊さない前提でテンプレートを毎起動
+# 上書きできるが、Codex CLI は config.toml の一部 (キーバインドのカスタマイズなど)
+# を自分で書き戻す。毎起動上書きするとその変更が消えてしまうため、既にファイルが
+# あれば触らない。テンプレートを更新しても既存 volume には届かないので、反映
+# したいときは `docker volume rm agent-state` でリセットすること。
+CODEX_CONFIG="$STATE/codex/config.toml"
+if [ ! -e "$CODEX_CONFIG" ]; then
+    install -m 644 "$SRC/codex/config.toml" "$CODEX_CONFIG"
+    chown "$USERNAME:$USERNAME" "$CODEX_CONFIG"
+fi
 
 # ---- jq ------------------------------------------------------------------
 # entrypoint.sh が毎起動 settings.json をテンプレートとマージするのに使う。

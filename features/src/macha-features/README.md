@@ -6,7 +6,7 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.4": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.5": {
         "claude": true,
         "codex": false
     }
@@ -17,7 +17,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.4": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.5": { "claude": true }
 }
 ```
 
@@ -89,6 +89,20 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 
 `setsid` が無い環境では 1 と 2 だけで進む。
 
+### config.toml
+
+正は**リポジトリルートの [`codex/config.toml`](../../../codex/) 側**で、[`claude/settings.json`](../../../claude/settings.json)
+と対になる内容にしている。feature 用のコピーは他と同じく `features/sync-assets.sh` が生成する。
+
+`claude/settings.json` と違い、**volume が空のとき（＝初回起動）だけ** `install.sh` が
+テンプレートを置く。毎起動上書きしない。Codex CLI は config.toml の一部（キーバインドの
+カスタマイズなど）を自分で書き戻すため、settings.json と同じように毎起動テンプレートを
+当てると、その変更が消えてしまう。TOML 用の jq に相当するマージツールも無いため、
+`~/.claude.json` と同じ「初回だけ配置」方式にした。
+
+この方式の裏返しとして、**テンプレートを更新しても既存の volume には届かない**。
+反映したいときは `docker volume rm agent-state` でリセットすること。
+
 ## settings.json / keybindings.json / ステータスライン
 
 正は**リポジトリルートの [`claude/`](../../../claude/) 側**（`settings.json`、
@@ -146,8 +160,8 @@ claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort
 `./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**
 複製元を変えると CI は起動するが、version が同じままだと publish はスキップされる。
 
-Codex には Claude Code の `statusLine` に相当する仕組みが見当たらないため、Codex 側の
-ステータスライン設定は行っていない。
+Codex 側にも `codex/config.toml` の `[tui] status_line` として同等の設定がある（[config.toml](#configtoml) 参照）。
+ただし表示項目を選ぶだけの仕組みで、並び順や書式は指定できない。
 
 ## 運用
 

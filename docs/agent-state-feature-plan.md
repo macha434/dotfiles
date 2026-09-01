@@ -54,7 +54,7 @@ volume "agent-state"
 
 | フェーズ | 実行者 | やること |
 | --- | --- | --- |
-| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。`~/.claude.json` の symlink。Claude Code CLI。entrypoint と settings.json/keybindings.json テンプレートの配置 |
+| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。`~/.claude.json` の symlink。Claude Code CLI。entrypoint と settings.json/keybindings.json テンプレートの配置。codex/config.toml は volume が空のときだけ配置（Codex 自身が書き戻すため毎回上書きしない） |
 | 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。settings.json にテンプレート全体をマージし statusLine だけイメージ側パスへ差し替える。keybindings.json はイメージ側への symlink。`exec "$@"` |
 | 作成後 `ensure-codex.sh` | remote user（`postCreateCommand`） | Codex CLI を volume に無いときだけ入れ、ランチャを張り直す |
 
@@ -62,7 +62,7 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.4`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.5`**。
 
 ```
 features/
@@ -270,8 +270,8 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.4` / `0.4.0` / `latest`。0.x では破壊的変更が minor に
-  乗るので、1.x での `:1` に相当する固定先は `:0.4` になる
+- 公開されるタグは `0` / `0.5` / `0.5.0` / `latest`。0.x では破壊的変更が minor に
+  乗るので、1.x での `:1` に相当する固定先は `:0.5` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
 
@@ -280,7 +280,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.4": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.5": {
     "claude": true,
     "codex": false
   }
