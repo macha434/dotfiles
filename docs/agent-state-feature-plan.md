@@ -62,7 +62,7 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.2`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.3`**。
 
 ```
 features/
@@ -268,8 +268,8 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.2` / `0.2.0` / `latest`。0.x では破壊的変更が minor に
-  乗るので、1.x での `:1` に相当する固定先は `:0.2` になる
+- 公開されるタグは `0` / `0.3` / `0.3.0` / `latest`。0.x では破壊的変更が minor に
+  乗るので、1.x での `:1` に相当する固定先は `:0.3` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
 
@@ -278,7 +278,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.2": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.3": {
     "claude": true,
     "codex": false
   }

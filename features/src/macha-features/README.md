@@ -6,7 +6,7 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.2": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.3": {
         "claude": true,
         "codex": false
     }
@@ -17,7 +17,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.2": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.3": { "claude": true }
 }
 ```
 
@@ -69,6 +69,17 @@ Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に�
 
 インストーラが張るランチャ `~/.local/bin/codex` はイメージ側にあってコンテナを作り直すと
 消えるので、インストールを飛ばす場合でも毎回張り直す。
+
+インストーラは最後に「Start Codex now? [y/N]」と訊いてくる。postCreate に答える相手は
+居ないので、既定の N が黙って選ばれるように三重に手を打っている。
+
+1. `curl | sh` をやめてファイルに落としてから実行する。パイプのままだとインストーラの
+   `read` が「まだ実行していないスクリプト自身の続き」を食う
+2. stdin を `/dev/null` にする。stdin から読む実装ならこれで EOF になる
+3. `setsid -w` で制御端末を切り離す。`/dev/tty` を直接開く実装には 2 が効かない。
+   `-w` が無いと子を待たず終了ステータスも拾えないので必ず付ける
+
+`setsid` が無い環境では 1 と 2 だけで進む。
 
 ## ステータスライン
 
