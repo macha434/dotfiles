@@ -6,3 +6,5 @@
 #
 # <source>                      <destination>
 claude/statusline-command.sh    features/src/macha-features/claude/statusline-command.sh
+claude/settings.json            features/src/macha-features/claude/settings.json
+claude/keybindings.json         features/src/macha-features/claude/keybindings.json

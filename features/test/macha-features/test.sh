@@ -24,6 +24,12 @@ for a in claude codex; do
         bash -c "[ \"\$(readlink /home/vscode/.$a)\" = $STATE/$a ]"
 done
 
+# ~/.claude.json (oauthAccount を含むグローバル設定) は ~/.claude の外にあり、
+# 別途ファイルとして symlink している。無いと再ログインを求められ続ける。
+check "~/.claude.json の symlink がある" test -L /home/vscode/.claude.json
+check "~/.claude.json のリンク先が正しい" \
+    bash -c '[ "$(readlink /home/vscode/.claude.json)" = /var/lib/agent-state/claude/.claude.json ]'
+
 # --- CLI は option どおり ---
 check "claude CLI が入っている"    test -x /home/vscode/.local/bin/claude
 check "codex CLI は入っていない"   bash -c '[ ! -e /home/vscode/.local/bin/codex ]'
@@ -37,6 +43,27 @@ check "settings.json に statusLine が入っている" \
               = /usr/local/share/macha-features/claude-statusline.sh ]'
 check "settings.json に refreshInterval 1 が入っている" \
     bash -c '[ "$(jq -r .statusLine.refreshInterval /var/lib/agent-state/claude/settings.json)" = 1 ]'
+
+# --- settings.json / keybindings.json はテンプレート全体を反映する ---
+# claude/settings.json 側の値と 1:1 で見る。値そのものを変えたら、この対応も直すこと。
+check "settings.json に model が入っている" \
+    bash -c '[ "$(jq -r .model /var/lib/agent-state/claude/settings.json)" = sonnet ]'
+check "settings.json に editorMode が入っている" \
+    bash -c '[ "$(jq -r .editorMode /var/lib/agent-state/claude/settings.json)" = vim ]'
+check "settings.json に theme が入っている" \
+    bash -c '[ "$(jq -r .theme /var/lib/agent-state/claude/settings.json)" = dark ]'
+check "settings.json に permissions.defaultMode が入っている" \
+    bash -c '[ "$(jq -r .permissions.defaultMode /var/lib/agent-state/claude/settings.json)" = auto ]'
+check "settings.json に attribution.commit が空文字で入っている" \
+    bash -c '[ "$(jq -r .attribution.commit /var/lib/agent-state/claude/settings.json)" = "" ]'
+check "settings.json テンプレートが SHARE に置かれている" \
+    test -f "$SHARE/claude-settings.json"
+
+check "keybindings.json の symlink がある" test -L /home/vscode/.claude/keybindings.json
+check "keybindings.json のリンク先が SHARE を指す" \
+    bash -c '[ "$(readlink /home/vscode/.claude/keybindings.json)" = /usr/local/share/macha-features/claude-keybindings.json ]'
+check "keybindings.json の内容がリポジトリと一致する" \
+    diff /home/vscode/.claude/keybindings.json /usr/local/share/macha-features/claude-keybindings.json
 # statusline は 3 行構成。ANSI を落として中身を見る。
 SL=/usr/local/share/macha-features/claude-statusline.sh
 check "statusline が 3 行出す" \
