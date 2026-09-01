@@ -70,17 +70,12 @@ fi
 ln -sfn "$CLAUDE_JSON_STATE" "$CLAUDE_JSON"
 chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
 
-# Codex の config.toml は claude/settings.json と違い、volume が空のとき (= 初回)
-# だけ置く。settings.json は Claude Code 側が壊さない前提でテンプレートを毎起動
-# 上書きできるが、Codex CLI は config.toml の一部 (キーバインドのカスタマイズなど)
-# を自分で書き戻す。毎起動上書きするとその変更が消えてしまうため、既にファイルが
-# あれば触らない。テンプレートを更新しても既存 volume には届かないので、反映
-# したいときは `docker volume rm agent-state` でリセットすること。
-CODEX_CONFIG="$STATE/codex/config.toml"
-if [ ! -e "$CODEX_CONFIG" ]; then
-    install -m 644 "$SRC/codex/config.toml" "$CODEX_CONFIG"
-    chown "$USERNAME:$USERNAME" "$CODEX_CONFIG"
-fi
+# Codex の config.toml は $STATE/codex/config.toml に無いときだけ置きたいが、
+# この判定はここ (ビルド時) ではなく ensure-codex.sh (postCreate、volume マウント後)
+# でやる。ここは volume がまだ存在しない段階なので、「無いから置く」が volume の
+# 状態を反映しない。空の volume の初回コピーアップに任せると、volume が既に
+# 何か持っている (claude/ だけでも) 限りコピーアップ自体が起きず、二度と届かない。
+# テンプレートは $SHARE に置いておき、実際の配置は ensure-codex.sh に任せる。
 
 # ---- jq ------------------------------------------------------------------
 # entrypoint.sh が毎起動 settings.json をテンプレートとマージするのに使う。
@@ -124,16 +119,18 @@ esac
 PROFILE
 chmod 644 /etc/profile.d/macha-features-path.sh
 
-# ---- entrypoint と claude の設定テンプレート ----------------------------
-# statusline スクリプト・settings.json・keybindings.json は volume の外に置く。
-# volume に置くとコピーアップが初回しか起きず、更新が 2 回目以降のコンテナに
-# 届かないため。settings.json は entrypoint が毎起動 jq でマージする際の
-# テンプレートとして、keybindings.json は symlink 先として使う。
+# ---- entrypoint と設定テンプレート ---------------------------------------
+# statusline スクリプト・settings.json・keybindings.json・codex/config.toml は
+# volume の外に置く。volume に置くとコピーアップが初回しか起きず、更新が 2 回目
+# 以降のコンテナに届かないため。settings.json は entrypoint が毎起動 jq でマージ
+# する際のテンプレートとして、keybindings.json は symlink 先として、
+# codex-config.toml は ensure-codex.sh が「無いときだけ置く」際の複製元として使う。
 install -d "$SHARE"
 install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
 install -m 755 "$SRC/claude/statusline-command.sh" "$SHARE/claude-statusline.sh"
 install -m 644 "$SRC/claude/settings.json"    "$SHARE/claude-settings.json"
 install -m 644 "$SRC/claude/keybindings.json" "$SHARE/claude-keybindings.json"
+install -m 644 "$SRC/codex/config.toml"      "$SHARE/codex-config.toml"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む

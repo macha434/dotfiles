@@ -54,9 +54,9 @@ volume "agent-state"
 
 | フェーズ | 実行者 | やること |
 | --- | --- | --- |
-| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。`~/.claude.json` の symlink。Claude Code CLI。entrypoint と settings.json/keybindings.json テンプレートの配置。codex/config.toml は volume が空のときだけ配置（Codex 自身が書き戻すため毎回上書きしない） |
+| ビルド時 `install.sh` | root（volume はまだ無い） | `/var/lib/agent-state/<agent>/` を作って chown。ここの中身が初回コピーアップで volume に乗る。`$HOME/.<agent>` の symlink。`~/.claude.json` の symlink。Claude Code CLI。entrypoint と settings.json/keybindings.json/codex-config.toml テンプレートの配置 |
 | 起動時 `entrypoint.sh` | root（マウント後、毎回） | 既存 volume に足りないサブディレクトリを補う。uid がズレていたら直す。settings.json にテンプレート全体をマージし statusLine だけイメージ側パスへ差し替える。keybindings.json はイメージ側への symlink。`exec "$@"` |
-| 作成後 `ensure-codex.sh` | remote user（`postCreateCommand`） | Codex CLI を volume に無いときだけ入れ、ランチャを張り直す |
+| 作成後 `ensure-codex.sh` | remote user（`postCreateCommand`） | codex/config.toml が volume に無いときだけ置く。Codex CLI を volume に無いときだけ入れ、ランチャを張り直す |
 
 ## 4. リポジトリ構成
 
@@ -105,9 +105,9 @@ features/
 
 | ファイル | いつ / 誰が | 役割 |
 | --- | --- | --- |
-| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.claude.json`）。Claude Code CLI。entrypoint と settings.json/keybindings.json/statusline のテンプレート配置 |
+| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.claude.json`）。Claude Code CLI。entrypoint と settings.json/keybindings.json/statusline/codex-config.toml のテンプレート配置 |
 | `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。settings.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
-| `src/macha-features/ensure-codex.sh` | 作成後 / remote user | Codex CLI（`postCreateCommand`） |
+| `src/macha-features/ensure-codex.sh` | 作成後 / remote user | codex/config.toml が volume に無いときだけ置く。Codex CLI（`postCreateCommand`） |
 | `src/macha-features/claude/{settings.json,keybindings.json,statusline-command.sh}` | — | いずれもルートの `claude/` からの生成物。パスの並びもルートに揃えてある |
 | `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
 | `features/assets.tsv` | — | 複製元と複製先の対応表。増やすときはここに 1 行 |
@@ -143,6 +143,16 @@ entrypoint でやるとダウンロードがコンテナ起動をブロックし
 
 Claude Code は `~/.local/share/claude/` に入る（volume の外）ので、この問題が無く
 ビルド時に入れられる。同じ「CLI を入れる」でも扱いが分かれるのはこの差による。
+
+**`codex/config.toml` も同じ理由で作成後でないといけない。** 最初はビルド時 `install.sh` で
+「`$STATE/codex/config.toml` に無いときだけ置く」としていたが、これは volume がまだ
+存在しない段階での判定なので、実質「image 側に置いて volume の初回コピーアップに賭ける」
+にしかならない。volume が（`claude/` だけでも）既に何か持っていればコピーアップ自体が
+起きないため、既存 volume では config.toml が永久に届かないというバグになった（実機で
+確認）。`ensure-codex.sh`（postCreate、volume マウント後）に判定を移すことで、実際の
+volume の状態を見て置けるようにした。副産物として、Codex の分だけをピンポイントで
+リセットできるようにもなった（`agent-state` を丸ごと消さなくても、`codex/config.toml` を
+消してコンテナを作り直す／`ensure-codex.sh` を再実行するだけでよい）。
 
 ### テスト
 
@@ -270,7 +280,7 @@ publish 後にやること（忘れやすい）:
 
 - GHCR のパッケージは**既定で private**。GitHub の Packages 設定から `macha-features` を
   public にしないと、pull のたびに認証を求められる
-- 公開されるタグは `0` / `0.5` / `0.5.0` / `latest`。0.x では破壊的変更が minor に
+- 公開されるタグは `0` / `0.5` / `0.5.1` / `latest`。0.x では破壊的変更が minor に
   乗るので、1.x での `:1` に相当する固定先は `:0.5` になる
 - git タグは `feature_<id>_<version>` の形で打たれる。これには `contents: write` が要る
   （`read` だと publish は通ってタグ付けだけ失敗する）
