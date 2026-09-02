@@ -1,4 +1,12 @@
 {
+    // ===== Dev Containers =====
+    "dev.containers.defaultFeatures":{
+        "ghcr.io/macha434/dotfiles/macha-features:latest": {
+            "claude": true,
+            "codex": false
+        }
+    },
+
     // ===== プライバシー / テレメトリ（送信しない） =====
     "telemetry.telemetryLevel": "off",
     "workbench.enableExperiments": false,
