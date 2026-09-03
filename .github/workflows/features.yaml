@@ -11,6 +11,8 @@ on:
       - 'claude/settings.json'
       - 'claude/keybindings.json'
       - 'codex/config.toml'
+      - 'copilot/statusline-command.sh'
+      - 'copilot/config.json'
   push:
     branches: [main]
     paths:
@@ -20,6 +22,8 @@ on:
       - 'claude/settings.json'
       - 'claude/keybindings.json'
       - 'codex/config.toml'
+      - 'copilot/statusline-command.sh'
+      - 'copilot/config.json'
 
 jobs:
   test:

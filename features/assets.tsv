@@ -9,3 +9,5 @@ claude/statusline-command.sh    features/src/macha-features/claude/statusline-co
 claude/settings.json            features/src/macha-features/claude/settings.json
 claude/keybindings.json         features/src/macha-features/claude/keybindings.json
 codex/config.toml               features/src/macha-features/codex/config.toml
+copilot/statusline-command.sh   features/src/macha-features/copilot/statusline-command.sh
+copilot/config.json             features/src/macha-features/copilot/config.json
