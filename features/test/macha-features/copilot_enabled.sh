@@ -35,7 +35,7 @@ check "jq が入っている" command -v jq
 CFG=$STATE/copilot/config.json
 check "config.json がある" test -f "$CFG"
 check "config.json に model が入っている" \
-    bash -c '[ "$(jq -r .model '"$CFG"')" = claude-sonnet-5 ]'
+    bash -c '[ "$(jq -r .model '"$CFG"')" = auto ]'
 check "config.json に effortLevel が入っている" \
     bash -c '[ "$(jq -r .effortLevel '"$CFG"')" = high ]'
 check "config.json に editorMode が入っている" \

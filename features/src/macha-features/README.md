@@ -227,7 +227,7 @@ Claude 版が 3 行なのに対し 2 行なのは、対応するフィールド�
 
 | Claude | Copilot |
 | --- | --- |
-| `model: "sonnet"` | `model: "claude-sonnet-5"`。Codex と同じくファミリーエイリアスが無いので ID 直指定 |
+| `model: "sonnet"` | `model: "auto"`。**ここだけ Claude に寄せていない**（Copilot に選ばせる。ID を直接書くこともできるが、Codex と同じくファミリーエイリアスが無いので新しい版が出るたびに更新が要る） |
 | `effortLevel: "high"` | `effortLevel: "high"`（`alwaysThinkingEnabled` はこちらに含まれる） |
 | `editorMode: "vim"` | `editorMode: "vim"`（キー名まで同じ） |
 | `permissions.defaultMode: "auto"` | `defaultPermissionMode: "assisted"` |

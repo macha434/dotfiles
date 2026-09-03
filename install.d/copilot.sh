@@ -19,9 +19,13 @@
 #
 #   Claude                          Copilot
 #   ------------------------------  --------------------------------------
-#   model: "sonnet"                 model: "claude-sonnet-5"
-#       Codex と同じく、常に最新へ解決されるファミリーエイリアスが無いので
-#       モデル ID を直接指定する。新しい版が出たらここを更新する。
+#   model: "sonnet"                 model: "auto"
+#       ここだけは Claude に寄せていない。Copilot にも "claude-sonnet-5" のような
+#       モデル ID を直接書けるが、Codex と同じく常に最新へ解決されるファミリー
+#       エイリアスが無いため、それだと新しい版が出るたびにここを更新することに
+#       なる。auto は Copilot 側にモデルを選ばせる指定で、--model と同じ解決を
+#       通る (CLI フラグ・環境変数・この設定はすべて同じところへ入る)。
+#       特定のモデルに固定したくなったら、ID をそのまま書けばよい。
 #   alwaysThinkingEnabled: true     (effortLevel に含まれる)
 #   effortLevel: "high"             effortLevel: "high"
 #       Copilot も常に推論するため、有無ではなく深さの指定になる。
