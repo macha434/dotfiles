@@ -3,3 +3,4 @@
 # ./features/sync-assets.sh --verify が漏れを教えてくれる。
 features/src/macha-features/claude/
 features/src/macha-features/codex/
+features/src/macha-features/copilot/

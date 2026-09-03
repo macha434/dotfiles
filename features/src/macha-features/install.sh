@@ -17,23 +17,21 @@ STATE=/var/lib/agent-state
 SHARE=/usr/local/share/macha-features
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ~/.claude と ~/.codex は option に関わらず両方用意する。
-# option が決めるのは CLI を入れるかどうかと statusline を当てるかどうかだけ。
-AGENTS=(claude codex)
+# ~/.claude ~/.codex ~/.copilot は option に関わらず全部用意する。
+# option が決めるのは CLI を入れるかどうかと設定を当てるかどうかだけ。
+AGENTS=(claude codex copilot)
 
-# statusline スクリプト・settings.json・keybindings.json は dotfiles 本体 (claude/) が
-# 正で、features/sync-assets.sh がここへ複製する。tarball には feature 配下しか入らない
+# 設定ファイル一式は dotfiles 本体 (claude/ codex/ copilot/) が正で、
+# features/sync-assets.sh がここへ複製する。tarball には feature 配下しか入らない
 # ため実体のコピーが要る。
-for f in statusline-command.sh settings.json keybindings.json; do
-    if [ ! -f "$SRC/claude/$f" ]; then
-        echo "macha-features: claude/$f が無い。features/sync-assets.sh を先に実行すること" >&2
+for f in claude/statusline-command.sh claude/settings.json claude/keybindings.json \
+         codex/config.toml \
+         copilot/statusline-command.sh copilot/config.json; do
+    if [ ! -f "$SRC/$f" ]; then
+        echo "macha-features: $f が無い。features/sync-assets.sh を先に実行すること" >&2
         exit 1
     fi
 done
-if [ ! -f "$SRC/codex/config.toml" ]; then
-    echo "macha-features: codex/config.toml が無い。features/sync-assets.sh を先に実行すること" >&2
-    exit 1
-fi
 
 
 echo "macha-features: $STATE を用意する (user=$USERNAME)"
@@ -78,11 +76,12 @@ chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
 # テンプレートは $SHARE に置いておき、実際の配置は ensure-codex.sh に任せる。
 
 # ---- jq ------------------------------------------------------------------
-# entrypoint.sh が毎起動 settings.json をテンプレートとマージするのに使う。
-# base image が入れている前提を置かず、ここで確実に用意する。無いままだと
+# entrypoint.sh が毎起動 settings.json / config.json をテンプレートとマージする
+# のに使う。base image が入れている前提を置かず、ここで確実に用意する。無いままだと
 # entrypoint 側は statusLine だけの最小構成にフォールバックし、model や
-# editorMode などは当たらない。
-if [ "${CLAUDE:-false}" = "true" ] && ! command -v jq >/dev/null 2>&1; then
+# editorMode などは当たらない。statusline スクリプト自体も jq で JSON を読む。
+if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
+   && ! command -v jq >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
         echo "macha-features: jq を入れる"
         apt-get update -qq
@@ -105,6 +104,30 @@ if [ "${CLAUDE:-false}" = "true" ]; then
     run_as_user 'curl -fsSL https://claude.ai/install.sh | bash'
 fi
 
+# Copilot は Codex ではなく Claude と同じ側。インストーラの PREFIX は非 root なら
+# $HOME/.local が既定で、ランチャも本体も ~/.local/ に入る。自動更新で降ってくる
+# パッケージの置き場も ~/.cache/copilot/pkg で、どちらも volume の外。つまり
+# ビルド時に入れて構わない。逆に postCreate でやると、コンテナを作り直すたびに
+# 300MB 近いダウンロードが走ることになる。
+#
+# curl | bash のままだと stdin を安全に触れない。パイプの最後のコマンドに付けた
+# リダイレクトはパイプ接続より優先されるため、bash </dev/null は「curl の出力を
+# 読む」ではなく「/dev/null を読む」になり、インストーラを一切実行しない。
+# curl 側は書き込み先 (パイプ) を読む相手がいなくなり失敗する
+# (実測: curl: (23) Failure writing output to destination)。
+# ensure-codex.sh と同じくファイルに落としてから実行すれば、この事故もなく
+# stdin だけ /dev/null にできる。インストーラが対話的に訊く実装だった場合に
+# 黙って既定を選ばせる備え。
+if [ "${COPILOT:-false}" = "true" ]; then
+    echo "macha-features: GitHub Copilot CLI を入れる"
+    run_as_user '
+        installer=$(mktemp)
+        curl -fsSL https://gh.io/copilot-install -o "$installer"
+        bash "$installer" </dev/null
+        rm -f "$installer"
+    '
+fi
+
 # Codex はここで入れない。インストーラがバイナリ本体を ~/.codex/packages/ に置く
 # ため、実体が volume の中に入る。ビルド時に入れても中身が volume に届くのは
 # コピーアップが起きる初回だけで、2 回目以降のコンテナではランチャが宙を指す。
@@ -120,17 +143,21 @@ PROFILE
 chmod 644 /etc/profile.d/macha-features-path.sh
 
 # ---- entrypoint と設定テンプレート ---------------------------------------
-# statusline スクリプト・settings.json・keybindings.json・codex/config.toml は
-# volume の外に置く。volume に置くとコピーアップが初回しか起きず、更新が 2 回目
-# 以降のコンテナに届かないため。settings.json は entrypoint が毎起動 jq でマージ
-# する際のテンプレートとして、keybindings.json は symlink 先として、
-# codex-config.toml は ensure-codex.sh が「無いときだけ置く」際の複製元として使う。
+# 設定ファイル一式は volume の外に置く。volume に置くとコピーアップが初回しか
+# 起きず、更新が 2 回目以降のコンテナに届かないため。使い分けは次のとおり。
+#   claude-settings.json  entrypoint が毎起動 jq でマージするテンプレート
+#   copilot-config.json   同上 (Copilot も自分で書き戻すので同じ扱い)
+#   claude-keybindings.json  symlink 先 (静的なのでマージ不要)
+#   codex-config.toml     ensure-codex.sh が「無いときだけ置く」際の複製元
+#   *-statusline.sh       settings 側から絶対パスで指す実体
 install -d "$SHARE"
 install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
 install -m 755 "$SRC/claude/statusline-command.sh" "$SHARE/claude-statusline.sh"
 install -m 644 "$SRC/claude/settings.json"    "$SHARE/claude-settings.json"
 install -m 644 "$SRC/claude/keybindings.json" "$SHARE/claude-keybindings.json"
 install -m 644 "$SRC/codex/config.toml"      "$SHARE/codex-config.toml"
+install -m 755 "$SRC/copilot/statusline-command.sh" "$SHARE/copilot-statusline.sh"
+install -m 644 "$SRC/copilot/config.json"    "$SHARE/copilot-config.json"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む
@@ -141,6 +168,7 @@ install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
     printf 'AGENTS=(%s)\n' "${AGENTS[*]}"
     printf 'CLAUDE=%q\n'   "${CLAUDE:-false}"
     printf 'CODEX=%q\n'    "${CODEX:-false}"
+    printf 'COPILOT=%q\n'  "${COPILOT:-false}"
 } > "$SHARE/config"
 chmod 644 "$SHARE/config"
 

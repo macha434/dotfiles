@@ -1,8 +1,8 @@
 {
     "id": "macha-features",
-    "version": "0.5.2",
+    "version": "0.6.0",
     "name": "Persistent agent state volume",
-    "description": "Keeps ~/.claude and ~/.codex in a named volume shared across dev containers, and optionally installs the agent CLIs.",
+    "description": "Keeps ~/.claude, ~/.codex and ~/.copilot in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
     "options": {
         "claude": {
@@ -14,6 +14,11 @@
             "type": "boolean",
             "default": false,
             "description": "Install the Codex CLI"
+        },
+        "copilot": {
+            "type": "boolean",
+            "default": false,
+            "description": "Install the GitHub Copilot CLI and apply the status line"
         }
     },
     "mounts": [

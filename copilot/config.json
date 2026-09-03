@@ -1,0 +1,13 @@
+{
+    "model": "auto",
+    "effortLevel": "high",
+    "editorMode": "vim",
+    "theme": "github",
+    "experimental": true,
+    "defaultPermissionMode": "assisted",
+    "includeCoAuthoredBy": false,
+    "statusLine": {
+        "type": "command",
+        "command": "~/.copilot/statusline-command.sh"
+    }
+}

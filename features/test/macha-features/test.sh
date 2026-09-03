@@ -17,7 +17,7 @@ SHARE=/usr/local/share/macha-features
 # --- volume と symlink は option に関わらず両方 ---
 check "state の所有者が vscode"   bash -c '[ "$(stat -c %U /var/lib/agent-state)" = vscode ]'
 check "state のパーミッションが 700" bash -c '[ "$(stat -c %a /var/lib/agent-state)" = 700 ]'
-for a in claude codex; do
+for a in claude codex copilot; do
     check "$a の実体がある"        test -d "$STATE/$a"
     check "$a の symlink がある"   test -L "/home/vscode/.$a"
     check "$a のリンク先が正しい" \
@@ -35,6 +35,10 @@ check "claude CLI が入っている"    test -x /home/vscode/.local/bin/claude
 check "codex CLI は入っていない"   bash -c '[ ! -e /home/vscode/.local/bin/codex ]'
 check "codex のバイナリも入っていない" \
     bash -c '[ ! -e /var/lib/agent-state/codex/packages ]'
+check "copilot CLI は入っていない"  bash -c '[ ! -e /home/vscode/.local/bin/copilot ]'
+# option が false なら entrypoint は config.json に触らない
+check "copilot の config.json も無い" \
+    bash -c '[ ! -e /var/lib/agent-state/copilot/config.json ]'
 
 # --- statusline ---
 check "statusline スクリプトがある" test -x "$SHARE/claude-statusline.sh"

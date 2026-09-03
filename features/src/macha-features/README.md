@@ -1,14 +1,15 @@
 # macha-features
 
-`~/.claude` と `~/.codex` を名前付き Docker volume に載せて、dev container を作り直しても
-消えないようにする。volume 名を固定しているので、プロジェクトをまたいで同じ状態を共有する
-（ログインは 1 回で済む）。オプションで agent の CLI 導入とステータスラインの適用も行う。
+`~/.claude`・`~/.codex`・`~/.copilot` を名前付き Docker volume に載せて、dev container を
+作り直しても消えないようにする。volume 名を固定しているので、プロジェクトをまたいで同じ状態を
+共有する（ログインは 1 回で済む）。オプションで agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.5": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.6": {
         "claude": true,
-        "codex": false
+        "codex": false,
+        "copilot": false
     }
 }
 ```
@@ -17,7 +18,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.5": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.6": { "claude": true }
 }
 ```
 
@@ -27,9 +28,10 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | --- | --- | --- | --- |
 | `claude` | boolean | `true` | Claude Code CLI を入れ、ステータスラインを当てる |
 | `codex` | boolean | `false` | Codex CLI を入れる |
+| `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 
-**永続化はオプションに関わらず常に行う。** `~/.claude` と `~/.codex` はどちらの値でも
-volume に載る。オプションが決めるのは CLI を入れるかどうかだけ。
+**永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot` はどの値でも
+volume に載る。オプションが決めるのは CLI を入れるかどうかと設定を当てるかどうかだけ。
 
 ## しくみ
 
@@ -39,7 +41,8 @@ volume "agent-state"
                 ├─ claude/
                 │    ├─ (ディレクトリ本体)  ←── symlink ── $HOME/.claude
                 │    └─ .claude.json        ←── symlink ── $HOME/.claude.json
-                └─ codex/  ←── symlink ── $HOME/.codex
+                ├─ codex/    ←── symlink ── $HOME/.codex
+                └─ copilot/  ←── symlink ── $HOME/.copilot
 ```
 
 マウント先を `$HOME` の下に置いていないのは、`mounts` の `target` が `_REMOTE_USER_HOME` を
@@ -49,7 +52,9 @@ volume "agent-state"
 別ファイルにある。`~/.claude/.credentials.json` 自体は `~/.claude` の volume 化で持続するが、
 ログイン判定は `~/.claude.json` の `oauthAccount` も見ているため、これを見落とすとコンテナを
 作り直すたびに再ログインを求められる（実機で確認済み）。ディレクトリと同じ考え方で、ファイルと
-して個別に symlink している。Codex 側には `~/.codex/` の外にこの種のファイルは無い。
+して個別に symlink している。Codex 側には `~/.codex/` の外にこの種のファイルは無い。Copilot も
+設定・状態はすべて `~/.copilot/`（`COPILOT_HOME` で変えられる）の下にある。`~/.cache/copilot/`
+も使うがこちらは CLI 本体のパッケージ置き場で、消えても再取得されるだけなので載せていない。
 
 所有権は実行時に直しているのではなく、**空の volume がマウント先の所有権を継承する**性質を
 使っている。ビルド時に `/var/lib/agent-state` を remote user 所有で作っておけば、初回
@@ -61,11 +66,16 @@ volume "agent-state"
 
 | いつ | 何を | なぜそこか |
 | --- | --- | --- |
-| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.claude.json`）、Claude Code CLI、settings.json/keybindings.json/statusline スクリプトのテンプレート配置 | コピーアップに乗せるにはビルド時でないといけない。Claude Code は `~/.local/` に入る（volume の外）のでイメージに焼ける |
-| **起動ごと** `entrypoint.sh` (root) | 所有権の補正、settings.json へのテンプレートマージ、keybindings.json の symlink | `settings.json` は volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
+| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）、Claude Code CLI と Copilot CLI、設定テンプレートと statusline スクリプトの配置 | コピーアップに乗せるにはビルド時でないといけない。Claude Code と Copilot は `~/.local/` に入る（volume の外）のでイメージに焼ける |
+| **起動ごと** `entrypoint.sh` (root) | 所有権の補正、settings.json と config.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
 
 ### Codex だけ扱いが違う理由
+
+3 つのうち Codex だけが postCreate なのは、インストーラの置き先が違うから。Claude Code と
+Copilot はどちらも `~/.local/`（と Copilot は `~/.cache/copilot/`）に入る。volume の外なので
+イメージに焼ける。Copilot を postCreate にすると、コンテナを作り直すたびに 300MB 近い
+ダウンロードが走ることになる。
 
 Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に置く**。つまり実体が volume の
 中に入る。ビルド時に入れてもコピーアップが起きる初回にしか届かず、2 回目以降のコンテナでは
@@ -144,7 +154,14 @@ MCP サーバーの承認履歴）は残り、テンプレートにあるキー�
 `statusLine` だけの最小構成を書いて警告を出す。この経路に頼らないよう、`jq` 自体は
 `install.sh`（ビルド時、root）が `apt-get` で入れる。base image が既に持っていれば
 何もしない。`apt-get` の無い base image では入れられない旨を警告するだけで、ビルドは
-落とさない。
+落とさない。`copilot` だけを有効にした場合も jq は入る（statusline スクリプトと
+config.json のマージの両方で要る）。
+
+**Copilot の `~/.copilot/config.json` もまったく同じ扱い**（`entrypoint.sh` の
+`apply_json_config` を両者で共有している）。Copilot も `/model` `/theme` `/vim` や
+`trustedFolders` を自分で config.json に書き戻す生きた設定なので、Codex の
+「無いときだけ置く」ではなく Claude 側の毎起動マージに寄せている。JSON なので jq が
+そのまま使える。違いは `refreshInterval` を付けないことだけで、理由は後述。
 
 **keybindings.json** は Claude Code 自身が書き換えることの無い静的な設定なので、
 settings.json と違ってマージは要らない。`~/.claude/keybindings.json` を
@@ -178,6 +195,61 @@ claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort
 
 Codex 側にも `codex/config.toml` の `[tui] status_line` として同等の設定がある（[config.toml](#configtoml) 参照）。
 ただし表示項目を選ぶだけの仕組みで、並び順や書式は指定できない。
+
+Copilot 側は Claude とスキーマまで同じ（`type` / `command` / `refreshInterval` / `padding`、
+stdin に JSON を渡して stdout を読む）ので、[`copilot/statusline-command.sh`](../../../copilot/)
+として同じ作りのスクリプトを置いている。ただし**渡ってくる JSON の中身は違う**ので、
+スクリプトは共有できず 2 本ある。
+
+```
+claude-sonnet-5 · allow-all off · ctx 42%    ← モデル ID / パーミッション / コンテキスト
+ai 1.25   premium 7                          ← 消費
+```
+
+Claude 版が 3 行なのに対し 2 行なのは、対応するフィールドが JSON に無いため。
+
+| Claude 版 | Copilot 版 |
+| --- | --- |
+| 1 行目 vim モード | **無し。** `vim.mode` に相当するものが渡らない（`editorMode: "vim"` 自体は効く） |
+| 2 行目 モデル / effort / fast / ctx | モデル / **allow-all** / ctx。effort と fast mode は渡らないので、代わりに `allow_all_enabled`（全許可モードかどうか）を出している |
+| 3 行目 レート制限 5h / 7d | 消費（AI クレジットと premium リクエスト）。窓ごとの上限も reset 時刻も渡らないため、ペース比較も色分けもできず値をそのまま出す |
+
+`refreshInterval` を付けていないのはこの 3 行目のため。Claude 側はレート制限の残り時間を
+進める必要があるが、Copilot 側にはそういう放っておくと古くなる表示が無いので、イベント駆動の
+ままでよい。コンテキスト率の色（90% 以上で赤、70% 以上で黄色）は Claude 版と揃えている。
+
+## Copilot の config.json
+
+正は**リポジトリルートの [`copilot/config.json`](../../../copilot/)** で、
+`claude/settings.json` と対になる内容にしている。対応表と、対応するものが無いキーの一覧は
+[`install.d/copilot.sh`](../../../install.d/copilot.sh) の頭に置いてある（config.json は
+素の JSON でコメントを書けないため）。要点だけ:
+
+| Claude | Copilot |
+| --- | --- |
+| `model: "sonnet"` | `model: "auto"`。**ここだけ Claude に寄せていない**（Copilot に選ばせる。ID を直接書くこともできるが、Codex と同じくファミリーエイリアスが無いので新しい版が出るたびに更新が要る） |
+| `effortLevel: "high"` | `effortLevel: "high"`（`alwaysThinkingEnabled` はこちらに含まれる） |
+| `editorMode: "vim"` | `editorMode: "vim"`（キー名まで同じ） |
+| `permissions.defaultMode: "auto"` | `defaultPermissionMode: "assisted"` |
+| `attribution.commit: ""` | `includeCoAuthoredBy: false` |
+| `theme: "dark"` | **無し。** dark を固定する手段が無い（`github` だけが専用配色を持つが端末に問い合わせて明暗を自動切替、`default` と `dim` は端末の 16 色そのまま） |
+| `tui: "fullscreen"` | **設定不要。** Copilot は TUI 起動時に必ず alt screen へ入る |
+| `fastMode` | **無し。** 速い版が要るならモデル ID 側で選ぶ |
+| `attribution.pr` / `sessionUrl` | **無し。** |
+
+`experimental: true` を入れているのは `editorMode` と `defaultPermissionMode` のためで、
+Claude 側に対応するキーがあるわけではない。どちらも実験機能のフラグ越しに有効化されるので、
+これが無いと黙って効かない。フラグが下りていない環境では `defaultPermissionMode` は警告を
+出して `manual` にフォールバックし、`editorMode` は無視される（設定自体はエラーにならない）。
+
+CLI のインストールは remote user で走らせている。Claude Code と同じく、失敗すると
+ビルドが落ちる。`curl | bash` にせず一度ファイルへ落としてから実行しているのは
+`ensure-codex.sh` と同じ理由（[Codex だけ扱いが違う理由](#codex-だけ扱いが違う理由)参照）。
+`curl ... | bash </dev/null` のようにパイプの最後へ直接リダイレクトを付けると、
+リダイレクトはパイプ接続より優先されるため、bash は curl の出力ではなく `/dev/null`
+を読むことになりインストーラを一切実行しない。curl 側も書き込み先を読む相手が
+いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
+CI で実際に踏んだ）。
 
 ## 運用
 

@@ -14,15 +14,18 @@ check "codex の実体が volume にある" \
     bash -c 'readlink -f /home/vscode/.local/bin/codex | grep -q "^/var/lib/agent-state/codex/"'
 check "codex が起動する"        bash -c '/home/vscode/.local/bin/codex --version | grep -q codex'
 
-for a in claude codex; do
+for a in claude codex copilot; do
     check "$a の symlink がある" test -L "/home/vscode/.$a"
     check "$a の所有者が vscode" \
         bash -c "[ \"\$(stat -c %U /var/lib/agent-state/$a)\" = vscode ]"
 done
 
-check "config が両方 true で焼かれている" \
+check "copilot CLI は入っていない" bash -c '[ ! -e /home/vscode/.local/bin/copilot ]'
+
+check "config が claude と codex だけ true で焼かれている" \
     bash -c 'grep -q "^CLAUDE=true$" /usr/local/share/macha-features/config \
-             && grep -q "^CODEX=true$" /usr/local/share/macha-features/config'
+             && grep -q "^CODEX=true$" /usr/local/share/macha-features/config \
+             && grep -q "^COPILOT=false$" /usr/local/share/macha-features/config'
 
 # codex/config.toml は claude/settings.json と違い、$STATE/codex/config.toml に
 # 無いときだけ ensure-codex.sh (postCreate) が置く。

@@ -28,50 +28,60 @@ if [ "$(id -u)" = 0 ]; then
     done
 fi
 
-# settings.json は volume の中にあり、コピーアップは初回しか起きない。ビルド時に
-# 書くと 2 回目以降のコンテナに届かないので、毎起動ここで当てる。
+# claude/settings.json と copilot/config.json は volume の中にあり、コピーアップは
+# 初回しか起きない。ビルド時に書くと 2 回目以降のコンテナに届かないので、毎起動
+# ここで当てる。どちらも CLI 自身が書き戻す生きた設定なので扱いは同じ。
 #
-# 正はホスト側の claude/settings.json (テンプレートとして $SHARE に複製済み) だが、
-# その statusLine はホスト向けの ~/.claude/statusline-command.sh を指しており、
-# このイメージには存在しない。テンプレートを丸ごと当てたあと、statusLine だけを
+# 正はホスト側のファイル (テンプレートとして $SHARE に複製済み) だが、その
+# statusLine はホスト向けの ~/.<agent>/statusline-command.sh を指しており、この
+# イメージには存在しない。テンプレートを丸ごと当てたあと、statusLine だけを
 # イメージ側の不変パスへ強制的に差し替える。
-apply_claude_settings() {
-    local settings="$STATE/claude/settings.json"
-    local template="$SHARE/claude-settings.json"
-    local script="$SHARE/claude-statusline.sh"
+#
+#   $1 volume 側の設定ファイル
+#   $2 $SHARE のテンプレート
+#   $3 $SHARE の statusline スクリプト
+#   $4 refreshInterval の秒数 (空なら付けない)
+apply_json_config() {
+    local dest=$1 template=$2 script=$3 refresh=$4
     [ -f "$template" ] || return 0
     [ -x "$script" ] || return 0
 
+    # 差し替える statusLine。refreshInterval はレート制限の残り時間を進めるために
+    # 要る (イベント駆動だけだとアイドル中に表示が止まる) が、そういう表示を
+    # 持たない側では付けない。
+    local sl
+    if [ -n "$refresh" ]; then
+        sl=$(printf '{"type":"command","command":"%s","refreshInterval":%s}' "$script" "$refresh")
+    else
+        sl=$(printf '{"type":"command","command":"%s"}' "$script")
+    fi
+
     if ! command -v jq >/dev/null 2>&1; then
         # テンプレートとのマージには jq が要る。無い環境では既存を壊さないよう、
-        # settings.json が無いときだけ statusLine だけの最小構成を書く。
-        if [ ! -e "$settings" ]; then
-            printf '{"statusLine":{"type":"command","command":"%s","refreshInterval":1}}\n' \
-                "$script" > "$settings"
-            echo "macha-features: jq が無いので $settings には statusLine しか当てられない" >&2
+        # ファイルが無いときだけ statusLine だけの最小構成を書く。
+        if [ ! -e "$dest" ]; then
+            printf '{"statusLine":%s}\n' "$sl" > "$dest"
+            echo "macha-features: jq が無いので $dest には statusLine しか当てられない" >&2
         fi
     else
-        [ -s "$settings" ] || echo '{}' > "$settings"
+        [ -s "$dest" ] || echo '{}' > "$dest"
         local tmp
         tmp=$(mktemp)
         # .[0] (既存) * .[1] (テンプレート) で、テンプレートに無いキー
-        # (Claude Code 自身が足したもの) は残しつつ、テンプレートにあるキーは
-        # 上書きする。host 側の install_file (symlink で単純上書き) と同じ
-        # 力関係を、volume を跨げないのでマージで再現している。
-        # refreshInterval はレート制限の残り時間を進めるために要る。
-        # イベント駆動だけだとアイドル中に表示が止まる。
-        if jq -s --arg cmd "$script" \
-             '.[0] * .[1] | .statusLine = {type: "command", command: $cmd, refreshInterval: 1}' \
-             "$settings" "$template" > "$tmp" 2>/dev/null; then
-            mv "$tmp" "$settings"
+        # (CLI 自身が足したもの) は残しつつ、テンプレートにあるキーは上書きする。
+        # host 側の install_file (symlink で単純上書き) と同じ力関係を、
+        # volume を跨げないのでマージで再現している。
+        if jq -s --argjson sl "$sl" '.[0] * .[1] | .statusLine = $sl' \
+             "$dest" "$template" > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$dest"
         else
             rm -f "$tmp"
-            echo "macha-features: $settings が JSON として読めないので設定を当てない" >&2
+            echo "macha-features: $dest が JSON として読めないので設定を当てない" >&2
             return 0
         fi
     fi
-    chown "$uid:$gid" "$settings"
-    chmod 600 "$settings"
+    chown "$uid:$gid" "$dest"
+    chmod 600 "$dest"
 }
 
 # keybindings.json は Claude Code 自身が書き換えることの無い静的な設定なので、
@@ -87,8 +97,19 @@ apply_claude_keybindings() {
 }
 
 if [ "${CLAUDE:-false}" = "true" ]; then
-    apply_claude_settings
+    apply_json_config "$STATE/claude/settings.json" \
+                      "$SHARE/claude-settings.json" \
+                      "$SHARE/claude-statusline.sh" 1
     apply_claude_keybindings
+fi
+
+# Copilot 側に refreshInterval を渡さないのは、ステータスラインにレート制限の
+# 残り時間のような、放っておくと古くなる表示が無いため。Copilot の JSON には
+# 窓ごとの上限も reset 時刻も入らない (copilot/statusline-command.sh の頭を参照)。
+if [ "${COPILOT:-false}" = "true" ]; then
+    apply_json_config "$STATE/copilot/config.json" \
+                      "$SHARE/copilot-config.json" \
+                      "$SHARE/copilot-statusline.sh" ""
 fi
 
 # 複数 feature の entrypoint は数珠つなぎに呼ばれるので、これを落とすと後続が動かない

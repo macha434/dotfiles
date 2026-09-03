@@ -105,10 +105,10 @@ features/
 
 | ファイル | いつ / 誰が | 役割 |
 | --- | --- | --- |
-| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.claude.json`）。Claude Code CLI。entrypoint と settings.json/keybindings.json/statusline/codex-config.toml のテンプレート配置 |
-| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。settings.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
+| `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）。Claude Code CLI と Copilot CLI。entrypoint と設定テンプレート一式の配置 |
+| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。claude/settings.json と copilot/config.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | codex/config.toml が volume に無いときだけ置く。Codex CLI（`postCreateCommand`） |
-| `src/macha-features/claude/{settings.json,keybindings.json,statusline-command.sh}` | — | いずれもルートの `claude/` からの生成物。パスの並びもルートに揃えてある |
+| `src/macha-features/{claude,codex,copilot}/*` | — | いずれもルートの同名ディレクトリからの生成物。パスの並びもルートに揃えてある |
 | `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
 | `features/assets.tsv` | — | 複製元と複製先の対応表。増やすときはここに 1 行 |
 
@@ -117,11 +117,13 @@ features/
 **ビルド時でないといけないもの**: volume のコピーアップに乗せる中身と所有権。これが
 この feature の肝で、実行時の chown が要らない理由。
 
-**起動ごとでないといけないもの**: `~/.claude/settings.json` へのテンプレートマージ。
-volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか届かない。
-テンプレート本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
-settings.json 側は不変なパスを指すだけでよく、陳腐化しない。`keybindings.json` は
-Claude Code 自身が書き換えないので、マージではなくこのテンプレートへの symlink で済む。
+**起動ごとでないといけないもの**: `~/.claude/settings.json` と `~/.copilot/config.json` への
+テンプレートマージ。volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか
+届かない。テンプレート本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
+設定ファイル側は不変なパスを指すだけでよく、陳腐化しない。どちらも CLI 自身が書き戻す生きた
+設定で、どちらも JSON なので `entrypoint.sh` の `apply_json_config` を共有している（違いは
+`refreshInterval` を付けるかどうかだけ）。`keybindings.json` は Claude Code 自身が
+書き換えないので、マージではなくこのテンプレートへの symlink で済む。
 
 **リポジトリルートから複製しないといけないもの**: settings.json・keybindings.json・
 statusline スクリプト。dotfiles としてホストにも配置したいので正は `claude/` 配下に置くが、
@@ -143,6 +145,11 @@ entrypoint でやるとダウンロードがコンテナ起動をブロックし
 
 Claude Code は `~/.local/share/claude/` に入る（volume の外）ので、この問題が無く
 ビルド時に入れられる。同じ「CLI を入れる」でも扱いが分かれるのはこの差による。
+
+Copilot も Claude 側。インストーラの `PREFIX` は非 root なら `$HOME/.local` が既定で、
+自動更新で降ってくるパッケージの置き場も `~/.cache/copilot/pkg`。どちらも volume の外なので
+ビルド時に焼ける。`~/.copilot/` に入るのは設定と状態だけで、CLI 本体は入らない。Codex に
+合わせて postCreate にすると、コンテナを作り直すたびに 300MB 近いダウンロードが走る。
 
 **`codex/config.toml` も同じ理由で作成後でないといけない。** 最初はビルド時 `install.sh` で
 「`$STATE/codex/config.toml` に無いときだけ置く」としていたが、これは volume がまだ
