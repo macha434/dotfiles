@@ -242,8 +242,14 @@ Claude 側に対応するキーがあるわけではない。どちらも実験�
 これが無いと黙って効かない。フラグが下りていない環境では `defaultPermissionMode` は警告を
 出して `manual` にフォールバックし、`editorMode` は無視される（設定自体はエラーにならない）。
 
-CLI のインストールは `curl -fsSL https://gh.io/copilot-install | bash` を remote user で
-走らせている。Claude Code と同じく、失敗するとビルドが落ちる。
+CLI のインストールは remote user で走らせている。Claude Code と同じく、失敗すると
+ビルドが落ちる。`curl | bash` にせず一度ファイルへ落としてから実行しているのは
+`ensure-codex.sh` と同じ理由（[Codex だけ扱いが違う理由](#codex-だけ扱いが違う理由)参照）。
+`curl ... | bash </dev/null` のようにパイプの最後へ直接リダイレクトを付けると、
+リダイレクトはパイプ接続より優先されるため、bash は curl の出力ではなく `/dev/null`
+を読むことになりインストーラを一切実行しない。curl 側も書き込み先を読む相手が
+いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
+CI で実際に踏んだ）。
 
 ## 運用
 

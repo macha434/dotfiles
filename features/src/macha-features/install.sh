@@ -110,12 +110,22 @@ fi
 # ビルド時に入れて構わない。逆に postCreate でやると、コンテナを作り直すたびに
 # 300MB 近いダウンロードが走ることになる。
 #
-# stdin を /dev/null にしておくのは ensure-codex.sh と同じ理由。ビルド時なので
-# 端末は付いていないはずだが、インストーラが対話的に訊く実装だった場合に
-# 黙って既定を選ばせる。
+# curl | bash のままだと stdin を安全に触れない。パイプの最後のコマンドに付けた
+# リダイレクトはパイプ接続より優先されるため、bash </dev/null は「curl の出力を
+# 読む」ではなく「/dev/null を読む」になり、インストーラを一切実行しない。
+# curl 側は書き込み先 (パイプ) を読む相手がいなくなり失敗する
+# (実測: curl: (23) Failure writing output to destination)。
+# ensure-codex.sh と同じくファイルに落としてから実行すれば、この事故もなく
+# stdin だけ /dev/null にできる。インストーラが対話的に訊く実装だった場合に
+# 黙って既定を選ばせる備え。
 if [ "${COPILOT:-false}" = "true" ]; then
     echo "macha-features: GitHub Copilot CLI を入れる"
-    run_as_user 'curl -fsSL https://gh.io/copilot-install | bash </dev/null'
+    run_as_user '
+        installer=$(mktemp)
+        curl -fsSL https://gh.io/copilot-install -o "$installer"
+        bash "$installer" </dev/null
+        rm -f "$installer"
+    '
 fi
 
 # Codex はここで入れない。インストーラがバイナリ本体を ~/.codex/packages/ に置く
