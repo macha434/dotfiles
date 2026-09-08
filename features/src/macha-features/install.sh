@@ -12,7 +12,8 @@ AGENTS=(claude codex copilot)
 
 for f in claude/statusline-command.sh claude/settings.json claude/keybindings.json \
          codex/config.toml \
-         copilot/statusline-command.sh copilot/settings.json; do
+         copilot/statusline-command.sh copilot/settings.json \
+         herdr/config.toml; do
     if [ ! -f "$SRC/$f" ]; then
         echo "macha-features: $f が無い。features/sync-assets.sh を先に実行すること" >&2
         exit 1
@@ -51,6 +52,14 @@ chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
 
 # codex/config.toml の配置はここではやらない (volume 未マウント。ensure-codex.sh 参照)
 
+# herdr にはログイン状態が無く設定も既定値のままなので、他 3 つと違い volume 化しない。
+# コンテナを作り直すとリポジトリの既定 config.toml に戻る。
+if [ "${HERDR:-false}" = "true" ]; then
+    install -d -o "$USERNAME" -g "$USERNAME" "$HOME_DIR/.config/herdr"
+    install -m 644 -o "$USERNAME" -g "$USERNAME" \
+            "$SRC/herdr/config.toml" "$HOME_DIR/.config/herdr/config.toml"
+fi
+
 # ---- jq ------------------------------------------------------------------
 # entrypoint.sh のテンプレートマージと statusline に要る
 if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
@@ -87,6 +96,11 @@ if [ "${COPILOT:-false}" = "true" ]; then
     '
 fi
 
+if [ "${HERDR:-false}" = "true" ]; then
+    echo "macha-features: herdr を入れる"
+    run_as_user 'curl -fsSL https://herdr.dev/install.sh | sh'
+fi
+
 # Codex はここでは入れない。バイナリが volume 内に入るため、毎起動 entrypoint 側で判定する
 
 # ~/.local/bin は Ubuntu の ~/.profile が拾うが、非ログインシェルでは読まれない
@@ -117,6 +131,7 @@ install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
     printf 'CLAUDE=%q\n'   "${CLAUDE:-false}"
     printf 'CODEX=%q\n'    "${CODEX:-false}"
     printf 'COPILOT=%q\n'  "${COPILOT:-false}"
+    printf 'HERDR=%q\n'    "${HERDR:-false}"
 } > "$SHARE/config"
 chmod 644 "$SHARE/config"
 

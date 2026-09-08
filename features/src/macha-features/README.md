@@ -6,10 +6,11 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.7": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.8": {
         "claude": true,
         "codex": false,
-        "copilot": false
+        "copilot": false,
+        "herdr": false
     }
 }
 ```
@@ -18,7 +19,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.7": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.8": { "claude": true }
 }
 ```
 
@@ -29,9 +30,15 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `claude` | boolean | `true` | Claude Code CLI を入れ、ステータスラインを当てる |
 | `codex` | boolean | `false` | Codex CLI を入れる |
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
+| `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
 
 **永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot` はどの値でも
 volume に載る。オプションが決めるのは CLI を入れるかどうかと設定を当てるかどうかだけ。
+
+**herdr はこの永続化の対象外。** ログインのような失うと困る状態が無く、設定も既定値のまま
+配る方針なので、他 3 つと違い volume 化していない。`herdr` オプションが決めるのは CLI の
+導入と `~/.config/herdr/config.toml` の配置のみで、コンテナを作り直すとその config.toml は
+リポジトリの既定値に戻る。
 
 ## しくみ
 
@@ -66,16 +73,16 @@ volume "agent-state"
 
 | いつ | 何を | なぜそこか |
 | --- | --- | --- |
-| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）、Claude Code CLI と Copilot CLI、設定テンプレートと statusline スクリプトの配置 | コピーアップに乗せるにはビルド時でないといけない。Claude Code と Copilot は `~/.local/` に入る（volume の外）のでイメージに焼ける |
+| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
 
 ### Codex だけ扱いが違う理由
 
-3 つのうち Codex だけが postCreate なのは、インストーラの置き先が違うから。Claude Code と
-Copilot はどちらも `~/.local/`（と Copilot は `~/.cache/copilot/`）に入る。volume の外なので
-イメージに焼ける。Copilot を postCreate にすると、コンテナを作り直すたびに 300MB 近い
-ダウンロードが走ることになる。
+4 つのうち Codex だけが postCreate なのは、インストーラの置き先が違うから。Claude Code・
+Copilot・herdr はどれも `~/.local/`（と Copilot は `~/.cache/copilot/`）に入る。volume の
+外なのでイメージに焼ける。postCreate にすると、コンテナを作り直すたびに数百 MB のダウンロードが
+走ることになる。
 
 Codex のインストーラは**バイナリ本体を `~/.codex/packages/` に置く**。つまり実体が volume の
 中に入る。ビルド時に入れてもコピーアップが起きる初回にしか届かず、2 回目以降のコンテナでは

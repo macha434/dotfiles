@@ -17,5 +17,15 @@
                 "copilot": true
             }
         }
+    },
+    "herdr_enabled": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "macha-features": {
+                "claude": false,
+                "codex": false,
+                "herdr": true
+            }
+        }
     }
 }

@@ -62,7 +62,7 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.7`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.8`**。
 
 ```
 features/
@@ -306,7 +306,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.7": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.8": {
     "claude": true,
     "codex": false
   }
