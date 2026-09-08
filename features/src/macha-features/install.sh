@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
-# agent の状態を名前付き volume に載せ、必要なら CLI も入れる。
-#
-# ここはイメージのビルド時に root で走る。volume はまだ存在しない。
-# このスクリプトが作った $STATE の中身と所有権が、空 volume の初回マウント時に
-# そのままコピーアップされる。それがこの feature の肝で、実行時の chown が
-# 要らない理由でもある。
-#
-# volume を $HOME の下ではなく /var/lib に張るのは、mounts の target が静的な
-# メタデータでユーザー名を展開できないため。ユーザー依存の部分 (symlink の
-# 張り先) だけをここで動的に解決する。
+# agent の状態を名前付き volume に載せ、必要なら CLI も入れる。ビルド時に root で走る。
 set -euo pipefail
 
 USERNAME="${_REMOTE_USER:-vscode}"
@@ -17,16 +8,11 @@ STATE=/var/lib/agent-state
 SHARE=/usr/local/share/macha-features
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ~/.claude ~/.codex ~/.copilot は option に関わらず全部用意する。
-# option が決めるのは CLI を入れるかどうかと設定を当てるかどうかだけ。
 AGENTS=(claude codex copilot)
 
-# 設定ファイル一式は dotfiles 本体 (claude/ codex/ copilot/) が正で、
-# features/sync-assets.sh がここへ複製する。tarball には feature 配下しか入らない
-# ため実体のコピーが要る。
 for f in claude/statusline-command.sh claude/settings.json claude/keybindings.json \
          codex/config.toml \
-         copilot/statusline-command.sh copilot/config.json; do
+         copilot/statusline-command.sh copilot/settings.json; do
     if [ ! -f "$SRC/$f" ]; then
         echo "macha-features: $f が無い。features/sync-assets.sh を先に実行すること" >&2
         exit 1
@@ -52,12 +38,7 @@ for name in "${AGENTS[@]}"; do
     chown -h "$USERNAME:$USERNAME" "$HOME_DIR/.$name"
 done
 
-# ~/.claude (このループで volume 化した) とは別に、Claude Code は
-# oauthAccount を含むグローバル設定を ~/.claude.json という、ホーム直下の
-# 別ファイルにも持つ。~/.claude/.credentials.json 自体は上のループで volume
-# に乗るが、ログイン判定は oauthAccount の有無も見ているため、この
-# ファイルを見落とすとコンテナを作り直すたびに再ログインを求められる
-# (実機で確認済み)。ディレクトリと同じ考え方でファイルとして symlink する。
+# oauthAccount を含む ~/.claude.json も symlink する (無いと再ログインを求められる)
 CLAUDE_JSON="$HOME_DIR/.claude.json"
 CLAUDE_JSON_STATE="$STATE/claude/.claude.json"
 if [ -f "$CLAUDE_JSON" ] && [ ! -L "$CLAUDE_JSON" ]; then
@@ -68,18 +49,10 @@ fi
 ln -sfn "$CLAUDE_JSON_STATE" "$CLAUDE_JSON"
 chown -h "$USERNAME:$USERNAME" "$CLAUDE_JSON"
 
-# Codex の config.toml は $STATE/codex/config.toml に無いときだけ置きたいが、
-# この判定はここ (ビルド時) ではなく ensure-codex.sh (postCreate、volume マウント後)
-# でやる。ここは volume がまだ存在しない段階なので、「無いから置く」が volume の
-# 状態を反映しない。空の volume の初回コピーアップに任せると、volume が既に
-# 何か持っている (claude/ だけでも) 限りコピーアップ自体が起きず、二度と届かない。
-# テンプレートは $SHARE に置いておき、実際の配置は ensure-codex.sh に任せる。
+# codex/config.toml の配置はここではやらない (volume 未マウント。ensure-codex.sh 参照)
 
 # ---- jq ------------------------------------------------------------------
-# entrypoint.sh が毎起動 settings.json / config.json をテンプレートとマージする
-# のに使う。base image が入れている前提を置かず、ここで確実に用意する。無いままだと
-# entrypoint 側は statusLine だけの最小構成にフォールバックし、model や
-# editorMode などは当たらない。statusline スクリプト自体も jq で JSON を読む。
+# entrypoint.sh のテンプレートマージと statusline に要る
 if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
    && ! command -v jq >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
@@ -93,8 +66,7 @@ if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
 fi
 
 # ---- CLI ---------------------------------------------------------------
-# どちらのインストーラも $HOME/.local/ に入れるので、root ではなく
-# remote user で走らせないと /root の下に入ってしまう。
+# root のままだと $HOME が /root になるので remote user で実行する
 run_as_user() {
     su - "$USERNAME" -c "$1"
 }
@@ -104,20 +76,7 @@ if [ "${CLAUDE:-false}" = "true" ]; then
     run_as_user 'curl -fsSL https://claude.ai/install.sh | bash'
 fi
 
-# Copilot は Codex ではなく Claude と同じ側。インストーラの PREFIX は非 root なら
-# $HOME/.local が既定で、ランチャも本体も ~/.local/ に入る。自動更新で降ってくる
-# パッケージの置き場も ~/.cache/copilot/pkg で、どちらも volume の外。つまり
-# ビルド時に入れて構わない。逆に postCreate でやると、コンテナを作り直すたびに
-# 300MB 近いダウンロードが走ることになる。
-#
-# curl | bash のままだと stdin を安全に触れない。パイプの最後のコマンドに付けた
-# リダイレクトはパイプ接続より優先されるため、bash </dev/null は「curl の出力を
-# 読む」ではなく「/dev/null を読む」になり、インストーラを一切実行しない。
-# curl 側は書き込み先 (パイプ) を読む相手がいなくなり失敗する
-# (実測: curl: (23) Failure writing output to destination)。
-# ensure-codex.sh と同じくファイルに落としてから実行すれば、この事故もなく
-# stdin だけ /dev/null にできる。インストーラが対話的に訊く実装だった場合に
-# 黙って既定を選ばせる備え。
+# curl|bash に直接 </dev/null を付けると動かない (リダイレクトがパイプより優先され、bash が /dev/null を読む)
 if [ "${COPILOT:-false}" = "true" ]; then
     echo "macha-features: GitHub Copilot CLI を入れる"
     run_as_user '
@@ -128,10 +87,7 @@ if [ "${COPILOT:-false}" = "true" ]; then
     '
 fi
 
-# Codex はここで入れない。インストーラがバイナリ本体を ~/.codex/packages/ に置く
-# ため、実体が volume の中に入る。ビルド時に入れても中身が volume に届くのは
-# コピーアップが起きる初回だけで、2 回目以降のコンテナではランチャが宙を指す。
-# 代わりに entrypoint が「volume に無ければ入れる」を毎起動で見る。
+# Codex はここでは入れない。バイナリが volume 内に入るため、毎起動 entrypoint 側で判定する
 
 # ~/.local/bin は Ubuntu の ~/.profile が拾うが、非ログインシェルでは読まれない
 cat > /etc/profile.d/macha-features-path.sh <<'PROFILE'
@@ -142,14 +98,6 @@ esac
 PROFILE
 chmod 644 /etc/profile.d/macha-features-path.sh
 
-# ---- entrypoint と設定テンプレート ---------------------------------------
-# 設定ファイル一式は volume の外に置く。volume に置くとコピーアップが初回しか
-# 起きず、更新が 2 回目以降のコンテナに届かないため。使い分けは次のとおり。
-#   claude-settings.json  entrypoint が毎起動 jq でマージするテンプレート
-#   copilot-config.json   同上 (Copilot も自分で書き戻すので同じ扱い)
-#   claude-keybindings.json  symlink 先 (静的なのでマージ不要)
-#   codex-config.toml     ensure-codex.sh が「無いときだけ置く」際の複製元
-#   *-statusline.sh       settings 側から絶対パスで指す実体
 install -d "$SHARE"
 install -m 755 "$SRC/entrypoint.sh"          "$SHARE/entrypoint.sh"
 install -m 755 "$SRC/claude/statusline-command.sh" "$SHARE/claude-statusline.sh"
@@ -157,7 +105,7 @@ install -m 644 "$SRC/claude/settings.json"    "$SHARE/claude-settings.json"
 install -m 644 "$SRC/claude/keybindings.json" "$SHARE/claude-keybindings.json"
 install -m 644 "$SRC/codex/config.toml"      "$SHARE/codex-config.toml"
 install -m 755 "$SRC/copilot/statusline-command.sh" "$SHARE/copilot-statusline.sh"
-install -m 644 "$SRC/copilot/config.json"    "$SHARE/copilot-config.json"
+install -m 644 "$SRC/copilot/settings.json"  "$SHARE/copilot-settings.json"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む

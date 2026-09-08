@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
-# dotfiles 本体で管理しているファイルを feature ディレクトリへ複製する。
+# dotfiles 本体のファイルを feature ディレクトリへ複製する。
 #
 #   ./features/sync-assets.sh            複製する
 #   ./features/sync-assets.sh --list     対応表を表示する
 #   ./features/sync-assets.sh --verify   設定漏れを検査する (CI 用)
-#
-# なぜコピーが要るか: feature の tarball には feature ディレクトリ配下しか入らない。
-# しかも packaging は symlink を symlink のまま tar に入れるので、リポジトリ内 symlink で
-# 共有すると公開された feature が宙を指すリンクを抱える (実測で確認)。
-#
-# 対応を増やすときは features/assets.tsv に 1 行足すだけでよい。足したあと --verify を
-# 通せば、workflow の paths と .gitignore の漏れをその場で教えてくれる。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +12,6 @@ WORKFLOW="$ROOT/.github/workflows/features.yaml"
 
 die() { printf 'sync-assets: %s\n' "$*" >&2; exit 1; }
 
-# コメントと空行を落として <source> <destination> の組を吐く
 entries() {
     sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$MANIFEST"
 }

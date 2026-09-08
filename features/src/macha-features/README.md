@@ -6,7 +6,7 @@
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.6": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.7": {
         "claude": true,
         "codex": false,
         "copilot": false
@@ -18,7 +18,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.6": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.7": { "claude": true }
 }
 ```
 
@@ -67,7 +67,7 @@ volume "agent-state"
 | いつ | 何を | なぜそこか |
 | --- | --- | --- |
 | **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）、Claude Code CLI と Copilot CLI、設定テンプレートと statusline スクリプトの配置 | コピーアップに乗せるにはビルド時でないといけない。Claude Code と Copilot は `~/.local/` に入る（volume の外）のでイメージに焼ける |
-| **起動ごと** `entrypoint.sh` (root) | 所有権の補正、settings.json と config.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
+| **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
 
 ### Codex だけ扱いが違う理由
@@ -155,13 +155,20 @@ MCP サーバーの承認履歴）は残り、テンプレートにあるキー�
 `install.sh`（ビルド時、root）が `apt-get` で入れる。base image が既に持っていれば
 何もしない。`apt-get` の無い base image では入れられない旨を警告するだけで、ビルドは
 落とさない。`copilot` だけを有効にした場合も jq は入る（statusline スクリプトと
-config.json のマージの両方で要る）。
+settings.json のマージの両方で要る）。
 
-**Copilot の `~/.copilot/config.json` もまったく同じ扱い**（`entrypoint.sh` の
+**Copilot の `~/.copilot/settings.json` もまったく同じ扱い**（`entrypoint.sh` の
 `apply_json_config` を両者で共有している）。Copilot も `/model` `/theme` `/vim` や
-`trustedFolders` を自分で config.json に書き戻す生きた設定なので、Codex の
+`/settings` で自分で settings.json に書き戻す生きた設定なので、Codex の
 「無いときだけ置く」ではなく Claude 側の毎起動マージに寄せている。JSON なので jq が
 そのまま使える。違いは `refreshInterval` を付けないことだけで、理由は後述。
+
+`~/.copilot/config.json` には触れない。あちらは CLI が自動管理する内部状態専用
+（認証情報やプラグインメタデータなど）で、公式ドキュメントも「通常このファイルを編集する
+必要はない」と明記している。ユーザー設定はもともと config.json に書く仕様だったが、
+2026-06-11 の Copilot CLI アップデート（`/settings` への統合）で settings.json に移った。
+以前の設計のまま config.json にユーザー設定をマージし続けていたところ、有効化した
+Copilot CLI がエラーになる不具合が実機で見つかり、settings.json 側に切り替えた。
 
 **keybindings.json** は Claude Code 自身が書き換えることの無い静的な設定なので、
 settings.json と違ってマージは要らない。`~/.claude/keybindings.json` を
@@ -218,11 +225,11 @@ Claude 版が 3 行なのに対し 2 行なのは、対応するフィールド�
 進める必要があるが、Copilot 側にはそういう放っておくと古くなる表示が無いので、イベント駆動の
 ままでよい。コンテキスト率の色（90% 以上で赤、70% 以上で黄色）は Claude 版と揃えている。
 
-## Copilot の config.json
+## Copilot の settings.json
 
-正は**リポジトリルートの [`copilot/config.json`](../../../copilot/)** で、
+正は**リポジトリルートの [`copilot/settings.json`](../../../copilot/)** で、
 `claude/settings.json` と対になる内容にしている。対応表と、対応するものが無いキーの一覧は
-[`install.d/copilot.sh`](../../../install.d/copilot.sh) の頭に置いてある（config.json は
+[`install.d/copilot.sh`](../../../install.d/copilot.sh) の頭に置いてある（settings.json は
 素の JSON でコメントを書けないため）。要点だけ:
 
 | Claude | Copilot |
@@ -241,6 +248,11 @@ Claude 版が 3 行なのに対し 2 行なのは、対応するフィールド�
 Claude 側に対応するキーがあるわけではない。どちらも実験機能のフラグ越しに有効化されるので、
 これが無いと黙って効かない。フラグが下りていない環境では `defaultPermissionMode` は警告を
 出して `manual` にフォールバックし、`editorMode` は無視される（設定自体はエラーにならない）。
+
+上表のキー名は config.json 時代の設計に基づくもので、settings.json への移行後のスキーマで
+そのまま通ることは実機で未検証。有効化してもまだ Copilot CLI がエラーになるようなら、
+CLI 上で `/settings` を開いて現在の実際のキー名を確認し、ここと
+[`copilot/settings.json`](../../../copilot/) を合わせること。
 
 CLI のインストールは remote user で走らせている。Claude Code と同じく、失敗すると
 ビルドが落ちる。`curl | bash` にせず一度ファイルへ落としてから実行しているのは

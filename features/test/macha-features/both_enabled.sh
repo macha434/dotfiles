@@ -6,7 +6,7 @@ source dev-container-features-test-lib
 check "claude CLI が入っている" test -x /home/vscode/.local/bin/claude
 check "claude が起動する"       bash -c '/home/vscode/.local/bin/claude --version | grep -q "Claude Code"'
 
-# codex は entrypoint が volume に入れるので、ランチャの解決先まで見る
+# codex はコンテナ作成後に volume へ入るので、ランチャの解決先まで見る
 check "codex のランチャがある"  test -L /home/vscode/.local/bin/codex
 check "codex のリンクが解決する" \
     bash -c '[ -x "$(readlink -f /home/vscode/.local/bin/codex)" ]'
@@ -27,9 +27,7 @@ check "config が claude と codex だけ true で焼かれている" \
              && grep -q "^CODEX=true$" /usr/local/share/macha-features/config \
              && grep -q "^COPILOT=false$" /usr/local/share/macha-features/config'
 
-# codex/config.toml は claude/settings.json と違い、$STATE/codex/config.toml に
-# 無いときだけ ensure-codex.sh (postCreate) が置く。
-# features/src/macha-features/ensure-codex.sh 参照。
+# config.toml は無いときだけ ensure-codex.sh (postCreate) が置く
 check "codex の config.toml がある" test -f /var/lib/agent-state/codex/config.toml
 check "config.toml に model が入っている" \
     bash -c 'grep -q "^model = \"gpt-5.6-terra\"\$" /var/lib/agent-state/codex/config.toml'

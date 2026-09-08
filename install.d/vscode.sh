@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-# VS Code のユーザー設定を配置する。
-#
-# 設置先 (VS Code の既定):
-#   linux   ${XDG_CONFIG_HOME:-~/.config}/Code/User/
-#   macos   ~/Library/Application Support/Code/User/
-#   windows %APPDATA%/Code/User/
-#   wsl     Windows 側の %APPDATA%/Code/User/
-#           (WSL から使う VS Code は Windows 側のクライアントなので、
-#            設定を読むのも Windows 側のパス。~/.config/Code は VS Code を
-#            入れていなくても残っていることがあるので、存在するかでは
-#            判定しない。Linux 版にも置きたい場合は
-#            DOTFILES_VSCODE_LINUX=1 を付けて実行する)
+# VS Code のユーザー設定を配置する。設置先は README.ja.md の「配置先」表を参照。
 
 vscode_user_dirs() {
     case "$DOTFILES_OS" in

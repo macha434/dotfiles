@@ -48,7 +48,6 @@ else
     step "$DOTFILES_OS で実行中"
 fi
 
-# 指定されたものが実在するか先に確かめる
 available=$(modules)
 for name in ${selected[@]+"${selected[@]}"}; do
     printf '%s\n' "$available" | grep -qx -- "$name" \
@@ -64,7 +63,7 @@ for name in $available; do
     fi
     step "$name"
     ran=$((ran + 1))
-    # 1 つが失敗しても残りは続ける。副シェルなので変数も汚さない。
+    # 失敗しても残りは続ける。副シェルなので変数も汚さない。
     if ! ( set -euo pipefail; . "$DOTFILES_ROOT/install.d/$name.sh" ); then
         warn "$name は失敗した"
         failed+=("$name")

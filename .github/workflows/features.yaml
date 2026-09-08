@@ -12,7 +12,7 @@ on:
       - 'claude/keybindings.json'
       - 'codex/config.toml'
       - 'copilot/statusline-command.sh'
-      - 'copilot/config.json'
+      - 'copilot/settings.json'
   push:
     branches: [main]
     paths:
@@ -23,7 +23,7 @@ on:
       - 'claude/keybindings.json'
       - 'codex/config.toml'
       - 'copilot/statusline-command.sh'
-      - 'copilot/config.json'
+      - 'copilot/settings.json'
 
 jobs:
   test:
@@ -34,17 +34,13 @@ jobs:
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
 
-      # 複製元は claude/ などリポジトリルート側。tarball に入るよう feature へ複製する。
-      # --verify は、対応表に足したのに paths や .gitignore を直し忘れた場合に落とす
+      # --verify で対応表・paths・.gitignore の追随漏れを検査してから複製する
       - name: Sync feature assets
         run: |
           ./features/sync-assets.sh --verify
           ./features/sync-assets.sh
 
-      # --features で絞らないので features/test/ 配下の全 feature が対象になる。
-      # feature を増やしたときに、ここを直し忘れて未テストのまま publish される
-      # のを防ぐため、あえて列挙しない。
-      # --base-image の既定は vscode ユーザーの居ない ubuntu:focal なので明示する。
+      # --features で絞らない (feature 追加時の列挙し忘れを防ぐため)。--base-image は既定が ubuntu:focal で vscode が居ないので明示する。
       - name: Test features
         run: |
           devcontainer features test \
@@ -53,14 +49,12 @@ jobs:
             --remote-user vscode
 
   release:
-    # テストが通るまで publish しない。needs は同一 workflow 内でしか張れないので、
-    # test と release を 1 ファイルにまとめている。
+    # needs は同一 workflow 内でしか張れないので test と release を 1 ファイルにまとめている
     needs: test
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      # devcontainers/action は publish 後に feature_<id>_<version> の git タグを
-      # 打つので、read だと publish 自体は通るがタグ付けだけ失敗する
+      # publish 後の git タグ付けに要る (read だとタグ付けだけ失敗する)
       contents: write
       packages: write
     steps:
@@ -69,10 +63,7 @@ jobs:
       - name: Sync feature assets
         run: ./features/sync-assets.sh
 
-      # features/src/<id>/ を ghcr.io/<owner>/<repo>/<id> として publish する。
-      # 複製元だけ変えて version を据え置くと、workflow は走るが publish はスキップ
-      # される (同一 version は上書きしない)。反映したいなら version を上げること。
-      # 既に存在するバージョンはスキップされるので、version を上げない限り無害。
+      # 反映するには version を上げる必要がある (同一 version は publish されない)
       - name: Publish features
         uses: devcontainers/action@v1
         with:

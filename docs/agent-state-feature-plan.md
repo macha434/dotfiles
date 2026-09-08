@@ -62,7 +62,7 @@ volume "agent-state"
 
 このリポジトリ（`macha434/dotfiles`）に同居させる。公開名は
 `ghcr.io/<owner>/<repo>/<featureId>` になるので、参照は
-**`ghcr.io/macha434/dotfiles/macha-features:0.5`**。
+**`ghcr.io/macha434/dotfiles/macha-features:0.7`**。
 
 ```
 features/
@@ -106,7 +106,7 @@ features/
 | ファイル | いつ / 誰が | 役割 |
 | --- | --- | --- |
 | `src/macha-features/install.sh` | ビルド時 / root | volume のマウント先を用意して symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）。Claude Code CLI と Copilot CLI。entrypoint と設定テンプレート一式の配置 |
-| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。claude/settings.json と copilot/config.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
+| `src/macha-features/entrypoint.sh` | 起動ごと / root | 所有権の補正。claude/settings.json と copilot/settings.json へのテンプレートマージ（`statusLine` はイメージ側パスへ強制上書き）。keybindings.json の symlink |
 | `src/macha-features/ensure-codex.sh` | 作成後 / remote user | codex/config.toml が volume に無いときだけ置く。Codex CLI（`postCreateCommand`） |
 | `src/macha-features/{claude,codex,copilot}/*` | — | いずれもルートの同名ディレクトリからの生成物。パスの並びもルートに揃えてある |
 | `features/sync-assets.sh` | 手動 / CI | `features/assets.tsv` の対応表に従って複製する |
@@ -117,7 +117,7 @@ features/
 **ビルド時でないといけないもの**: volume のコピーアップに乗せる中身と所有権。これが
 この feature の肝で、実行時の chown が要らない理由。
 
-**起動ごとでないといけないもの**: `~/.claude/settings.json` と `~/.copilot/config.json` への
+**起動ごとでないといけないもの**: `~/.claude/settings.json` と `~/.copilot/settings.json` への
 テンプレートマージ。volume の中にあるので、ビルド時に書くとコピーアップが起きる初回にしか
 届かない。テンプレート本体のほうは volume の外（`/usr/local/share/macha-features/`）に置くので、
 設定ファイル側は不変なパスを指すだけでよく、陳腐化しない。どちらも CLI 自身が書き戻す生きた
@@ -160,6 +160,15 @@ Copilot も Claude 側。インストーラの `PREFIX` は非 root なら `$HOM
 volume の状態を見て置けるようにした。副産物として、Codex の分だけをピンポイントで
 リセットできるようにもなった（`agent-state` を丸ごと消さなくても、`codex/config.toml` を
 消してコンテナを作り直す／`ensure-codex.sh` を再実行するだけでよい）。
+
+**`copilot/config.json` → `copilot/settings.json` も実機で見つかったバグの修正。** 元々の
+設計は「Copilot CLI もユーザー設定を `~/.copilot/config.json` に書き戻す」という当時の仕様に
+基づいていたが、2026-06-11 の Copilot CLI アップデート（`/settings` への設定統合）で
+ユーザー設定の置き場が `settings.json` に移り、`config.json` は「CLI が自動管理する内部状態
+専用（認証情報やプラグインメタデータなど）」になった。この変更を追わないまま
+`entrypoint.sh` が `config.json` にユーザー設定をマージし続けた結果、`copilot` を有効化した
+devcontainer で Copilot CLI がエラーになる不具合が発生した。修正はファイルの向き先を
+`settings.json` に変えるだけで、マージの仕組み（`apply_json_config`）自体は変えていない。
 
 ### テスト
 
@@ -297,7 +306,7 @@ publish 後にやること（忘れやすい）:
 ```jsonc
 // VS Code のユーザー設定 settings.json
 "dev.containers.defaultFeatures": {
-  "ghcr.io/macha434/dotfiles/macha-features:0.5": {
+  "ghcr.io/macha434/dotfiles/macha-features:0.7": {
     "claude": true,
     "codex": false
   }

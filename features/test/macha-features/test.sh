@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
-# 既定の option (claude=true, codex=false) で検査する。
-#
-# devcontainer features test は feature の mounts も entrypoint も適用するので、
-# ここでの /var/lib/agent-state は実際に volume で、statusline も当たった後。
-# ローカルで回すと agent-state volume が残るため
-# docker volume rm agent-state で片付けること。
-#
-# 永続化・共有・別 uid からの復旧はここでは見ていない。
-# docs/agent-state-feature-plan.md の Step 5 を別途通すこと。
+# 既定の option (claude=true, codex=false) で検査する。実行すると agent-state volume が実際に作られる。
+# 永続化・共有・別 uid からの復旧はここでは見ない (docs/agent-state-feature-plan.md の Step 5 参照)。
 set -e
 source dev-container-features-test-lib
 
@@ -24,8 +17,7 @@ for a in claude codex copilot; do
         bash -c "[ \"\$(readlink /home/vscode/.$a)\" = $STATE/$a ]"
 done
 
-# ~/.claude.json (oauthAccount を含むグローバル設定) は ~/.claude の外にあり、
-# 別途ファイルとして symlink している。無いと再ログインを求められ続ける。
+# ~/.claude.json も symlink される (無いと再ログインを求められる)
 check "~/.claude.json の symlink がある" test -L /home/vscode/.claude.json
 check "~/.claude.json のリンク先が正しい" \
     bash -c '[ "$(readlink /home/vscode/.claude.json)" = /var/lib/agent-state/claude/.claude.json ]'
@@ -36,9 +28,9 @@ check "codex CLI は入っていない"   bash -c '[ ! -e /home/vscode/.local/bi
 check "codex のバイナリも入っていない" \
     bash -c '[ ! -e /var/lib/agent-state/codex/packages ]'
 check "copilot CLI は入っていない"  bash -c '[ ! -e /home/vscode/.local/bin/copilot ]'
-# option が false なら entrypoint は config.json に触らない
-check "copilot の config.json も無い" \
-    bash -c '[ ! -e /var/lib/agent-state/copilot/config.json ]'
+# option が false なら entrypoint は settings.json に触らない
+check "copilot の settings.json も無い" \
+    bash -c '[ ! -e /var/lib/agent-state/copilot/settings.json ]'
 
 # --- statusline ---
 check "statusline スクリプトがある" test -x "$SHARE/claude-statusline.sh"
@@ -48,12 +40,11 @@ check "settings.json に statusLine が入っている" \
 check "settings.json に refreshInterval 1 が入っている" \
     bash -c '[ "$(jq -r .statusLine.refreshInterval /var/lib/agent-state/claude/settings.json)" = 1 ]'
 
-# jq は settings.json のテンプレートマージに要る。base image 任せにせず
-# install.sh が入れる (features/src/macha-features/install.sh 参照)。
+# jq は install.sh が入れる (base image 任せにしない)
 check "jq が入っている" command -v jq
 
 # --- settings.json / keybindings.json はテンプレート全体を反映する ---
-# claude/settings.json 側の値と 1:1 で見る。値そのものを変えたら、この対応も直すこと。
+# claude/settings.json 側の値と 1:1 で見る。値を変えたらこの対応も直すこと。
 check "settings.json に model が入っている" \
     bash -c '[ "$(jq -r .model /var/lib/agent-state/claude/settings.json)" = sonnet ]'
 check "settings.json に editorMode が入っている" \
@@ -82,8 +73,7 @@ check "statusline がモデル ID を出す" \
 check "statusline がコンテキスト率を出す" \
     bash -c 'echo "{\"context_window\":{\"used_percentage\":42}}" | '"$SL"' \
              | sed "s/\x1b\[[0-9;]*m//g" | grep -q "ctx 42%"'
-# 5 時間窓で 2 時間経過 (残り 3 時間) なら、線形ペースは 40%。
-# 45% はそれを超えるので赤、25% は 30% も下回るので緑。
+# 2時間経過(残り3h)の線形ペースは40%: 45%は超過で赤、25%は下回るので緑
 check "レート制限がペース超過で赤になる" \
     bash -c 'echo "{\"rate_limits\":{\"five_hour\":{\"used_percentage\":45,\"resets_at\":$(($(date +%s)+10800))}}}" \
              | '"$SL"' | tail -1 | grep -qP "\x1b\[31m"'

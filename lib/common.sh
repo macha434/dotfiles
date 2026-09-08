@@ -18,8 +18,6 @@ warn() { printf '  %swarn%s %s\n' "$_c_yellow" "$_c_reset" "$*" >&2; }
 die()  { printf '%serror%s %s\n' "$_c_red" "$_c_reset" "$*" >&2; exit 1; }
 
 # ---- OS 判定 ------------------------------------------------------------
-# DOTFILES_OS に linux / wsl / macos / windows のいずれかを入れる。
-# windows は Git Bash や MSYS2 から実行した場合。
 detect_os() {
     if [ -n "${DOTFILES_OS:-}" ]; then
         return
@@ -41,8 +39,6 @@ detect_os() {
 }
 
 # 設置先が Windows のファイルシステムかどうかを、パスごとに判断する。
-# WSL から /mnt 以下 (drvfs) に symlink を張っても Windows 側のアプリは
-# 辿れないのでコピーする。同じ WSL でも Linux 側の設置先なら symlink でよい。
 target_is_windows() {
     local dest=$1
     case "$DOTFILES_OS" in
@@ -94,10 +90,7 @@ if [ -n "${DOTFILES_WIN_APPDATA:-}" ]; then
 fi
 
 # ---- 設置 ---------------------------------------------------------------
-# install_file <src> <dest>
-#   Linux / macOS  : symlink を張る (リポジトリ側を編集すれば即反映される)
-#   Windows / WSL  : コピーする (Windows 側から WSL の symlink を辿れないため)
-# 既存ファイルが中身違いで残っている場合は .bak.<日時> に退避する。
+# install_file <src> <dest> : OS ごとに symlink かコピーで配置する。
 install_file() {
     local src=$1 dest=$2
     [ -f "$src" ] || die "元ファイルが無い: $src"
@@ -117,8 +110,6 @@ install_file() {
     mkdir -p "$dest_dir" || die "作成できない: $dest_dir"
 
     if target_is_windows "$dest"; then
-        # Windows 側で保存されると CRLF になることがあるので、
-        # 改行コードだけの違いは同一とみなして書き換えない
         if [ -f "$dest" ] && diff -q --strip-trailing-cr "$src" "$dest" >/dev/null 2>&1; then
             skip "同一 $dest"
             return
@@ -137,12 +128,7 @@ install_file() {
     fi
 }
 
-# 設置前の状態を 1 度だけ退避しておく。symlink は張り替えるだけなので触らない。
-#
-# 毎回タイムスタンプ付きで退避すると設置先に溜まっていく。特に VS Code の
-# settings.json は拡張機能 (VSCodeVim の statusBarColorControl など) が
-# 書き込むため実行のたびに差分が出るので、退避は「dotfiles を入れる前の
-# 状態」を残す初回だけにする。
+# 設置前の状態を 1 度だけ退避する。symlink は張り替えるだけなので触らない。
 _backup() {
     local dest=$1
     local backup="$dest.dotfiles.bak"

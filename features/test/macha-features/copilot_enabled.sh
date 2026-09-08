@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# copilot だけを有効にした場合。claude=false なので、jq と設定マージが
-# claude に引きずられずに copilot 単独で成立しているかも同時に見ている。
+# copilot だけを有効にした場合。claude なしでも jq/設定マージが単独で成立するか見る。
 set -e
 source dev-container-features-test-lib
 
 STATE=/var/lib/agent-state
 SHARE=/usr/local/share/macha-features
 
-# Codex と違い Copilot は volume の外 (~/.local と ~/.cache) に入るので、
-# ビルド時に入れている。ランチャは実体で symlink ではない。
+# Copilot は volume の外に入るのでビルド時に入る (Codex と違いランチャは実体)
 check "copilot CLI が入っている" test -x /home/vscode/.local/bin/copilot
 check "copilot が起動する" \
     bash -c '/home/vscode/.local/bin/copilot --version | grep -q "GitHub Copilot CLI"'
@@ -27,32 +25,33 @@ check "config が copilot だけ true で焼かれている" \
              && grep -q "^COPILOT=true$" /usr/local/share/macha-features/config'
 
 # jq は claude が false でも copilot のために要る
-# (features/src/macha-features/install.sh 参照)
 check "jq が入っている" command -v jq
 
-# --- config.json は毎起動テンプレートとマージされる ---
-# copilot/config.json 側の値と 1:1 で見る。値を変えたらこの対応も直すこと。
-CFG=$STATE/copilot/config.json
-check "config.json がある" test -f "$CFG"
-check "config.json に model が入っている" \
+# --- settings.json は毎起動テンプレートとマージされる ---
+# copilot/settings.json 側の値と 1:1 で見る。値を変えたらこの対応も直すこと。
+CFG=$STATE/copilot/settings.json
+check "settings.json がある" test -f "$CFG"
+check "config.json には触れていない" \
+    bash -c '! jq -e ".model" '"$STATE"'/copilot/config.json >/dev/null 2>&1'
+check "settings.json に model が入っている" \
     bash -c '[ "$(jq -r .model '"$CFG"')" = auto ]'
-check "config.json に effortLevel が入っている" \
+check "settings.json に effortLevel が入っている" \
     bash -c '[ "$(jq -r .effortLevel '"$CFG"')" = high ]'
-check "config.json に editorMode が入っている" \
+check "settings.json に editorMode が入っている" \
     bash -c '[ "$(jq -r .editorMode '"$CFG"')" = vim ]'
-check "config.json に experimental が入っている" \
+check "settings.json に experimental が入っている" \
     bash -c '[ "$(jq -r .experimental '"$CFG"')" = true ]'
-check "config.json に defaultPermissionMode が入っている" \
+check "settings.json に defaultPermissionMode が入っている" \
     bash -c '[ "$(jq -r .defaultPermissionMode '"$CFG"')" = assisted ]'
-check "config.json に includeCoAuthoredBy が入っている" \
+check "settings.json に includeCoAuthoredBy が入っている" \
     bash -c '[ "$(jq -r .includeCoAuthoredBy '"$CFG"')" = false ]'
 
 # statusLine だけはテンプレートの ~/.copilot/... ではなくイメージ側の実体を指す
-check "config.json の statusLine がイメージ側を指す" \
+check "settings.json の statusLine がイメージ側を指す" \
     bash -c '[ "$(jq -r .statusLine.command '"$CFG"')" \
               = /usr/local/share/macha-features/copilot-statusline.sh ]'
 # Claude と違い refreshInterval は付けない (レート制限の残り時間表示が無いため)
-check "config.json に refreshInterval は無い" \
+check "settings.json に refreshInterval は無い" \
     bash -c '[ "$(jq -r ".statusLine.refreshInterval // empty" '"$CFG"')" = "" ]'
 
 # --- statusline ---
