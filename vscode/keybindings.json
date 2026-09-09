@@ -264,6 +264,101 @@
         "when": "terminalFocus"
     },
 
+    // ---- スクロールバック移動 (ctrl+a v で開始, tmux の copy-mode 相当) ----
+    //   独自コンテキスト terminalScrollMode で on/off をトグルする擬似モード。
+    //   モード中に割り当てていないキーはそのままシェルへ渡ってしまうので注意。
+    //   ('[' は JIS 配列だと物理位置がずれて拾えないことがあるため v (vi) にした)
+    {
+        // トップレベルの command + args だと _setContext に引数が展開されず
+        // 効かなかったため、runCommands 経由で明示的に渡す
+        "key": "ctrl+a v",
+        "command": "runCommands",
+        "args": { "commands": [{ "command": "_setContext", "args": ["terminalScrollMode", true] }] },
+        "when": "terminalFocus"
+    },
+    {
+        "key": "escape",
+        "command": "runCommands",
+        "args": { "commands": [{ "command": "_setContext", "args": ["terminalScrollMode", false] }] },
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "q",
+        "command": "runCommands",
+        "args": { "commands": [{ "command": "_setContext", "args": ["terminalScrollMode", false] }] },
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "j",
+        "command": "workbench.action.terminal.scrollDown",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "k",
+        "command": "workbench.action.terminal.scrollUp",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "d",
+        "command": "workbench.action.terminal.scrollDownPage",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "u",
+        "command": "workbench.action.terminal.scrollUpPage",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "g g",
+        "command": "workbench.action.terminal.scrollToTop",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "shift+g",
+        "command": "workbench.action.terminal.scrollToBottom",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        // shell integration 有効時、直前/次のコマンド境界へジャンプ
+        // ('{' / '}' は JIS 配列で拾えなかったため n / shift+n にした)
+        "key": "n",
+        "command": "workbench.action.terminal.scrollToNextCommand",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "shift+n",
+        "command": "workbench.action.terminal.scrollToPreviousCommand",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        // コマンド単位でのビジュアル選択もどき (yankは y = copySelection)
+        "key": "shift+j",
+        "command": "workbench.action.terminal.selectToNextCommand",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "shift+k",
+        "command": "workbench.action.terminal.selectToPreviousCommand",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        // ヤンクしたらそのままモードを抜ける (tmux の copy-mode と同じ挙動)
+        "key": "y",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "workbench.action.terminal.copySelection",
+                { "command": "_setContext", "args": ["terminalScrollMode", false] }
+            ]
+        },
+        "when": "terminalFocus && terminalScrollMode"
+    },
+    {
+        "key": "/",
+        "command": "workbench.action.terminal.focusFind",
+        "when": "terminalFocus && terminalScrollMode"
+    },
+
     // ========================================================================
     // エディタグループ (prefix: ctrl+a)
     //   h / l の when はターミナル側の完全な補集合になっている
