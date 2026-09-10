@@ -208,15 +208,9 @@
     //   shift+j / shift+k は「エディタグループ」セクションが受け持つ。
     // ========================================================================
     {
-        // 新規ターミナル (パネル)
+        // 新規ターミナル (settings.json の terminal.integrated.defaultLocation によりエディタ領域で開く)
         "key": "ctrl+a -",
         "command": "workbench.action.terminal.new",
-        "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
-    },
-    {
-        // 新規ターミナル (エディタ領域)
-        "key": "ctrl+a shift+-",
-        "command": "workbench.action.createTerminalEditor",
         "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
     },
     {
