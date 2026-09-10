@@ -8,10 +8,12 @@
     "defaultMode": "auto"
   },
   "model": "sonnet",
+  "enableWorkflows": true,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
+  "language": "日本語",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "fastMode": false,
@@ -19,5 +21,7 @@
   "tui": "fullscreen",
   "theme": "dark",
   "editorMode": "vim",
-  "agentPushNotifEnabled": true
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "crossSessionInbound": "accept"
 }
