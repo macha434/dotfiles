@@ -1,12 +1,4 @@
 {
-  "model": "sonnet",
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "editorMode": "vim",
-  "theme": "dark",
-  "tui": "fullscreen",
-  "fastMode": false,
-  "fastModePerSessionOptIn": true,
   "attribution": {
     "commit": "",
     "pr": "",
@@ -15,8 +7,17 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "model": "sonnet",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
-  }
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "fastMode": false,
+  "fastModePerSessionOptIn": true,
+  "tui": "fullscreen",
+  "theme": "dark",
+  "editorMode": "vim",
+  "agentPushNotifEnabled": true
 }
