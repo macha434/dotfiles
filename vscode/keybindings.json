@@ -566,11 +566,11 @@
         "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
     },
     {
-        // ファイル名検索 (type navigation) を明示的に起動する。
-        // "/" 自体はファイル名の先頭に来ないので、既定の automatic モードで
-        // 拾わせて無駄にするより、これで明示的にトリガーする方が扱いやすい。
+        // ファイル名検索は Quick Open (既定 ctrl+p) に任せる。
+        // type navigation だと n/f/h/l/r/y/p/d 始まりのファイルには
+        // softDispatch で既存のキーバインドが優先されて検索に使えないため。
         "key": "/",
-        "command": "list.triggerTypeNavigation",
+        "command": "workbench.action.quickOpen",
         "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
     },
 
