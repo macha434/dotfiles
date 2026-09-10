@@ -605,5 +605,12 @@
     {
         "key": "ctrl+alt+b",
         "command": "-workbench.action.toggleAuxiliaryBar"
+    },
+    {
+        // 既定の ctrl+j (パネルのトグル) を解除。パネルの開閉は ctrl+a j/k に
+        // 集約しているので、上記の限定的な上書き (サイドバー/クイック入力/
+        // サジェスト) に当たらない文脈にまで既定動作が残らないようにする。
+        "key": "ctrl+j",
+        "command": "-workbench.action.togglePanel"
     }
 ]
