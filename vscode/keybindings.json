@@ -443,6 +443,29 @@
         "command": "workbench.action.toggleMaximizedPanel",
         "when": "panelFocus"
     },
+    {
+        // 出力パネルのチャンネル選択 (Output パネルがアクティブな時のみ)
+        "key": "ctrl+a o",
+        "command": "workbench.action.showOutputChannels",
+        "when": "activePanel == 'workbench.panel.output'"
+    },
+
+    // ========================================================================
+    // 各パネルのフィルタ欄へジャンプ (/)
+    //   問題 / デバッグコンソールのみ対象。出力パネルはフィルタ欄自体はあるが
+    //   キーボードでそこへフォーカスを移すコマンドが VS Code 本体に無いため除外。
+    //   フィルタ欄自体にフォーカスがある間は素の "/" を打てるよう除外している。
+    // ========================================================================
+    {
+        "key": "/",
+        "command": "problems.action.focusFilter",
+        "when": "focusedView == 'workbench.panel.markers.view' && !inputFocus"
+    },
+    {
+        "key": "/",
+        "command": "repl.action.filter",
+        "when": "inDebugRepl && !inputFocus && !editorTextFocus"
+    },
 
     // ========================================================================
     // サイドバー (prefix: ctrl+d)
