@@ -13,7 +13,7 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "language": "日本語",
+  "language": "Japanese",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "fastMode": false,
@@ -22,6 +22,6 @@
   "theme": "dark",
   "editorMode": "vim",
   "remoteControlAtStartup": true,
-  "agentPushNotifEnabled": true,
-  "crossSessionInbound": "accept"
+  "crossSessionInbound": "accept",
+  "agentPushNotifEnabled": true
 }
