@@ -60,6 +60,10 @@
     "diffEditor.renderSideBySide": true,
     "diffEditor.wordWrap": "on",
 
+    // ===== ターミナル =====
+    // 新規ターミナルは下部パネルではなくエディター領域にタブとして開く
+    "terminal.integrated.defaultLocation": "editor",
+
     // ===== ウィンドウ / UI レイアウト =====
     "window.titleBarStyle": "custom",
     "window.menuBarVisibility": "compact",
