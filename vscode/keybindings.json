@@ -565,6 +565,14 @@
         "command": "deleteFile",
         "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
     },
+    {
+        // ファイル名検索は Quick Open (既定 ctrl+p) に任せる。
+        // type navigation だと n/f/h/l/r/y/p/d 始まりのファイルには
+        // softDispatch で既存のキーバインドが優先されて検索に使えないため。
+        "key": "/",
+        "command": "workbench.action.quickOpen",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
 
     // ========================================================================
     // リスト / ウィジェットの上下移動 (ctrl+j / ctrl+k)
