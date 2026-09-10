@@ -565,6 +565,14 @@
         "command": "deleteFile",
         "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
     },
+    {
+        // ファイル名検索 (type navigation) を明示的に起動する。
+        // "/" 自体はファイル名の先頭に来ないので、既定の automatic モードで
+        // 拾わせて無駄にするより、これで明示的にトリガーする方が扱いやすい。
+        "key": "/",
+        "command": "list.triggerTypeNavigation",
+        "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+    },
 
     // ========================================================================
     // リスト / ウィジェットの上下移動 (ctrl+j / ctrl+k)
