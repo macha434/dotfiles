@@ -4,7 +4,8 @@
         "ghcr.io/macha434/dotfiles/macha-features:latest": {
             "claude": true,
             "codex": false
-        }
+        },
+        "ghcr.io/macha434/server-base-features/app-compose-skill:1": {}
     },
 
     // ===== プライバシー / テレメトリ（送信しない） =====
