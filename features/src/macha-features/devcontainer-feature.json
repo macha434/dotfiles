@@ -1,8 +1,8 @@
 {
     "id": "macha-features",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "name": "Persistent agent state volume",
-    "description": "Keeps ~/.claude, ~/.codex and ~/.copilot in a named volume shared across dev containers, and optionally installs the agent CLIs.",
+    "description": "Keeps ~/.claude, ~/.codex, ~/.copilot and ~/.config/gh (gh auth login credentials) in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
     "options": {
         "claude": {

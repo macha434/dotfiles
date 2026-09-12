@@ -8,7 +8,12 @@ STATE=/var/lib/agent-state
 SHARE=/usr/local/share/macha-features
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-AGENTS=(claude codex copilot)
+AGENTS=(claude codex copilot gh)
+
+# $HOME/.<name> に収まらないものだけここで上書きする (gh auth login の資格情報は ~/.config/gh)
+declare -A HOME_REL=(
+    [gh]=".config/gh"
+)
 
 for f in claude/statusline-command.sh claude/settings.json claude/keybindings.json \
          codex/config.toml \
@@ -28,15 +33,20 @@ install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE"
 for name in "${AGENTS[@]}"; do
     install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$STATE/$name"
 
+    rel="${HOME_REL[$name]:-.$name}"
+    home_path="$HOME_DIR/$rel"
+    parent="$(dirname "$home_path")"
+    [ -d "$parent" ] || install -d -m 755 -o "$USERNAME" -g "$USERNAME" "$parent"
+
     # ベースイメージが既に設定を持っているなら volume 側へ移してから貼り替える
-    if [ -d "$HOME_DIR/.$name" ] && [ ! -L "$HOME_DIR/.$name" ]; then
-        cp -a "$HOME_DIR/.$name/." "$STATE/$name/"
-        rm -rf "$HOME_DIR/.$name"
+    if [ -d "$home_path" ] && [ ! -L "$home_path" ]; then
+        cp -a "$home_path/." "$STATE/$name/"
+        rm -rf "$home_path"
         chown -R "$USERNAME:$USERNAME" "$STATE/$name"
     fi
 
-    ln -sfn "$STATE/$name" "$HOME_DIR/.$name"
-    chown -h "$USERNAME:$USERNAME" "$HOME_DIR/.$name"
+    ln -sfn "$STATE/$name" "$home_path"
+    chown -h "$USERNAME:$USERNAME" "$home_path"
 done
 
 # oauthAccount を含む ~/.claude.json も symlink する (無いと再ログインを求められる)

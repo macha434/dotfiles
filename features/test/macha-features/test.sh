@@ -22,6 +22,12 @@ check "~/.claude.json の symlink がある" test -L /home/vscode/.claude.json
 check "~/.claude.json のリンク先が正しい" \
     bash -c '[ "$(readlink /home/vscode/.claude.json)" = /var/lib/agent-state/claude/.claude.json ]'
 
+# gh auth login の資格情報 (~/.config/gh) も option に関わらず永続化する
+check "gh の実体がある"      test -d "$STATE/gh"
+check "gh の symlink がある" test -L /home/vscode/.config/gh
+check "gh のリンク先が正しい" \
+    bash -c '[ "$(readlink /home/vscode/.config/gh)" = /var/lib/agent-state/gh ]'
+
 # --- CLI は option どおり ---
 check "claude CLI が入っている"    test -x /home/vscode/.local/bin/claude
 check "codex CLI は入っていない"   bash -c '[ ! -e /home/vscode/.local/bin/codex ]'

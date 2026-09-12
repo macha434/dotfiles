@@ -20,6 +20,11 @@ for a in claude codex copilot; do
         bash -c "[ \"\$(stat -c %U /var/lib/agent-state/$a)\" = vscode ]"
 done
 
+# gh は ~/.config/gh なので上のパターンに乗らない
+check "gh の symlink がある" test -L /home/vscode/.config/gh
+check "gh の所有者が vscode" \
+    bash -c '[ "$(stat -c %U /var/lib/agent-state/gh)" = vscode ]'
+
 check "copilot CLI は入っていない" bash -c '[ ! -e /home/vscode/.local/bin/copilot ]'
 
 check "config が claude と codex だけ true で焼かれている" \

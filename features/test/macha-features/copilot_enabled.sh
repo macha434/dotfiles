@@ -19,6 +19,8 @@ check "claude CLI は入っていない" bash -c '[ ! -e /home/vscode/.local/bin
 for a in claude codex copilot; do
     check "$a の symlink がある" test -L "/home/vscode/.$a"
 done
+# gh は ~/.config/gh なので上のパターンに乗らないが、これも option に関わらず張る
+check "gh の symlink がある" test -L /home/vscode/.config/gh
 
 check "config が copilot だけ true で焼かれている" \
     bash -c 'grep -q "^CLAUDE=false$" /usr/local/share/macha-features/config \
