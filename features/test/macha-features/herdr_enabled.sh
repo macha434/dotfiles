@@ -11,10 +11,11 @@ check "claude CLI は入っていない" bash -c '[ ! -e /home/vscode/.local/bin
 check "codex CLI は入っていない"  bash -c '[ ! -e /home/vscode/.local/bin/codex ]'
 check "copilot CLI は入っていない" bash -c '[ ! -e /home/vscode/.local/bin/copilot ]'
 
-# symlink は option に関わらず claude/codex/copilot の 3 つだけ張る (herdr は対象外)
+# symlink は option に関わらず claude/codex/copilot/gh の 4 つだけ張る (herdr は対象外)
 for a in claude codex copilot; do
     check "$a の symlink がある" test -L "/home/vscode/.$a"
 done
+check "gh の symlink がある" test -L /home/vscode/.config/gh
 
 check "config が herdr だけ true で焼かれている" \
     bash -c 'grep -q "^CLAUDE=false$" /usr/local/share/macha-features/config \

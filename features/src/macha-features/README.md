@@ -1,12 +1,13 @@
 # macha-features
 
-`~/.claude`・`~/.codex`・`~/.copilot` を名前付き Docker volume に載せて、dev container を
-作り直しても消えないようにする。volume 名を固定しているので、プロジェクトをまたいで同じ状態を
-共有する（ログインは 1 回で済む）。オプションで agent の CLI 導入とステータスラインの適用も行う。
+`~/.claude`・`~/.codex`・`~/.copilot`・`~/.config/gh`（`gh auth login` の資格情報）を
+名前付き Docker volume に載せて、dev container を作り直しても消えないようにする。volume 名を
+固定しているので、プロジェクトをまたいで同じ状態を共有する（ログインは 1 回で済む）。オプションで
+agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.8": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.9": {
         "claude": true,
         "codex": false,
         "copilot": false,
@@ -19,7 +20,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.8": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.9": { "claude": true }
 }
 ```
 
@@ -32,11 +33,14 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
 
-**永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot` はどの値でも
-volume に載る。オプションが決めるのは CLI を入れるかどうかと設定を当てるかどうかだけ。
+**永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot`・
+`~/.config/gh` はどの値でも volume に載る。`gh` には CLI 導入や設定テンプレートに対応する
+オプションが無い（devcontainer のベースイメージや他 feature で入っている前提で、
+`gh auth login` の資格情報だけを持続化する）。オプションが決めるのはそれ以外の agent の
+CLI を入れるかどうかと設定を当てるかどうかだけ。
 
 **herdr はこの永続化の対象外。** ログインのような失うと困る状態が無く、設定も既定値のまま
-配る方針なので、他 3 つと違い volume 化していない。`herdr` オプションが決めるのは CLI の
+配る方針なので、他の 4 つと違い volume 化していない。`herdr` オプションが決めるのは CLI の
 導入と `~/.config/herdr/config.toml` の配置のみで、コンテナを作り直すとその config.toml は
 リポジトリの既定値に戻る。
 
@@ -49,7 +53,8 @@ volume "agent-state"
                 │    ├─ (ディレクトリ本体)  ←── symlink ── $HOME/.claude
                 │    └─ .claude.json        ←── symlink ── $HOME/.claude.json
                 ├─ codex/    ←── symlink ── $HOME/.codex
-                └─ copilot/  ←── symlink ── $HOME/.copilot
+                ├─ copilot/  ←── symlink ── $HOME/.copilot
+                └─ gh/       ←── symlink ── $HOME/.config/gh
 ```
 
 マウント先を `$HOME` の下に置いていないのは、`mounts` の `target` が `_REMOTE_USER_HOME` を
@@ -63,6 +68,12 @@ volume "agent-state"
 設定・状態はすべて `~/.copilot/`（`COPILOT_HOME` で変えられる）の下にある。`~/.cache/copilot/`
 も使うがこちらは CLI 本体のパッケージ置き場で、消えても再取得されるだけなので載せていない。
 
+`gh` だけは `$HOME/.<name>` パターンに乗らない。`gh auth login` の資格情報は
+`~/.config/gh/hosts.yml` に、それ以外の設定は同じディレクトリの `config.yml` に入るので、
+`install.sh` は `gh` だけホームからの相対パスを `.config/gh` に上書きしてから symlink する
+（`HOME_REL` 連想配列）。エージェントが増えて同じように `~/.<name>` に収まらない場合は、
+ここに 1 行足すだけで対応できる。
+
 所有権は実行時に直しているのではなく、**空の volume がマウント先の所有権を継承する**性質を
 使っている。ビルド時に `/var/lib/agent-state` を remote user 所有で作っておけば、初回
 マウント時にその所有権ごと volume にコピーアップされるので、sudo 無しで書ける状態から始まる。
@@ -73,7 +84,7 @@ volume "agent-state"
 
 | いつ | 何を | なぜそこか |
 | --- | --- | --- |
-| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
+| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
 

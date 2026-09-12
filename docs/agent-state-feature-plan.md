@@ -337,11 +337,16 @@ publish 後にやること（忘れやすい）:
 
 agent を 1 つ足すときに触る場所:
 
-1. `devcontainer-feature.json` の `options` に boolean を 1 つ追加
+1. `devcontainer-feature.json` の `options` に boolean を 1 つ追加（CLI 導入や設定テンプレートが
+   無い agent なら、`gh` のようにオプション無しで永続化だけ足してもよい）
 2. `install.sh` の `AGENTS=()` に名前を追加（永続化はここだけで済む）
+   - 設定の置き場が `$HOME/.<agent>` に収まらない（`gh` の `~/.config/gh` のような）場合は、
+     `HOME_REL` 連想配列にホームからの相対パスを 1 行足す。無ければ既定の `.<agent>` を使う
 3. CLI を入れるなら、その CLI が**どこにバイナリを置くか**を先に確かめる
    - `$HOME/.local/` など volume の外 → `install.sh` でビルド時に入れる
    - `~/.<agent>/` の中 → volume と衝突するので `ensure-codex.sh` と同じ形にする
+   - devcontainer のベースイメージや他 feature が入れてくれるなら、このステップ自体が不要
+     （`gh` はこちら。認証情報の永続化だけを担う）
 
 3 を飛ばすと Codex で踏んだのと同じ壊れ方をする。`~/.local/bin/<cli>` の
 リンク先が volume の中を指していないか、`readlink -f` で確かめるのが早い。
