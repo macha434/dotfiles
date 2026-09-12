@@ -11,7 +11,8 @@
   "enableWorkflows": true,
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline-command.sh"
+    "command": "~/.claude/statusline-command.sh",
+    "hideVimModeIndicator": true
   },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
