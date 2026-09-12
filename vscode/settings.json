@@ -5,10 +5,6 @@
             "claude": true,
             "codex": false
         },
-        // server_base 配下にデプロイするアプリのdocker-compose labels規約
-        // (site.port/site.subdomain)をClaude Codeに教えるスキルを、
-        // ~/.claude/skills/ に配置する。
-        // https://github.com/macha434/server-base-features
         "ghcr.io/macha434/server-base-features/app-compose-skill:1": {}
     },
 
