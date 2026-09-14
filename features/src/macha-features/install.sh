@@ -18,7 +18,8 @@ declare -A HOME_REL=(
 for f in claude/statusline-command.sh claude/settings.json claude/keybindings.json \
          codex/config.toml \
          copilot/statusline-command.sh copilot/settings.json \
-         herdr/config.toml; do
+         herdr/config.toml \
+         claude-skills.json codex-skills.json; do
     if [ ! -f "$SRC/$f" ]; then
         echo "macha-features: $f が無い。features/sync-assets.sh を先に実行すること" >&2
         exit 1
@@ -71,8 +72,9 @@ if [ "${HERDR:-false}" = "true" ]; then
 fi
 
 # ---- jq ------------------------------------------------------------------
-# entrypoint.sh のテンプレートマージと statusline に要る
-if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
+# entrypoint.sh のテンプレートマージと statusline、ensure-skills.sh の冪等判定に要る
+if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ] \
+     || [ "${HAIKU_SHUNT:-false}" = "true" ] || [ "${LUNA_SHUNT:-false}" = "true" ]; } \
    && ! command -v jq >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
         echo "macha-features: jq を入れる"
@@ -80,7 +82,7 @@ if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ]; } \
         apt-get install -y -qq --no-install-recommends jq
         rm -rf /var/lib/apt/lists/*
     else
-        echo "macha-features: jq が無く apt-get も無いので入れられない。settings.json は statusLine しか当たらない" >&2
+        echo "macha-features: jq が無く apt-get も無いので入れられない。settings.json は statusLine しか当たらない (skillのインストールも動かない)" >&2
     fi
 fi
 
@@ -131,6 +133,9 @@ install -m 644 "$SRC/codex/config.toml"      "$SHARE/codex-config.toml"
 install -m 755 "$SRC/copilot/statusline-command.sh" "$SHARE/copilot-statusline.sh"
 install -m 644 "$SRC/copilot/settings.json"  "$SHARE/copilot-settings.json"
 install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
+install -m 755 "$SRC/ensure-skills.sh"       "$SHARE/ensure-skills.sh"
+install -m 644 "$SRC/claude-skills.json"     "$SHARE/claude-skills.json"
+install -m 644 "$SRC/codex-skills.json"      "$SHARE/codex-skills.json"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む
 {
@@ -138,10 +143,12 @@ install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
     printf 'HOME_DIR=%q\n' "$HOME_DIR"
     printf 'STATE=%q\n'    "$STATE"
     printf 'AGENTS=(%s)\n' "${AGENTS[*]}"
-    printf 'CLAUDE=%q\n'   "${CLAUDE:-false}"
-    printf 'CODEX=%q\n'    "${CODEX:-false}"
-    printf 'COPILOT=%q\n'  "${COPILOT:-false}"
-    printf 'HERDR=%q\n'    "${HERDR:-false}"
+    printf 'CLAUDE=%q\n'      "${CLAUDE:-false}"
+    printf 'CODEX=%q\n'       "${CODEX:-false}"
+    printf 'COPILOT=%q\n'     "${COPILOT:-false}"
+    printf 'HERDR=%q\n'       "${HERDR:-false}"
+    printf 'HAIKU_SHUNT=%q\n' "${HAIKU_SHUNT:-false}"
+    printf 'LUNA_SHUNT=%q\n'  "${LUNA_SHUNT:-false}"
 } > "$SHARE/config"
 chmod 644 "$SHARE/config"
 

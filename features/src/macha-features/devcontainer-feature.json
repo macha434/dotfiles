@@ -1,6 +1,6 @@
 {
     "id": "macha-features",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "name": "Persistent agent state volume",
     "description": "Keeps ~/.claude, ~/.codex, ~/.copilot and ~/.config/gh (gh auth login credentials) in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
@@ -24,6 +24,16 @@
             "type": "boolean",
             "default": false,
             "description": "Install herdr"
+        },
+        "haikuShunt": {
+            "type": "boolean",
+            "default": false,
+            "description": "Install the haiku-shunt Claude Code plugin (requires claude)"
+        },
+        "lunaShunt": {
+            "type": "boolean",
+            "default": false,
+            "description": "Install the luna-shunt Codex CLI plugin (requires codex)"
         }
     },
     "mounts": [
@@ -34,5 +44,5 @@
         }
     ],
     "entrypoint": "/usr/local/share/macha-features/entrypoint.sh",
-    "postCreateCommand": "/usr/local/share/macha-features/ensure-codex.sh"
+    "postCreateCommand": "/usr/local/share/macha-features/ensure-codex.sh && /usr/local/share/macha-features/ensure-skills.sh"
 }

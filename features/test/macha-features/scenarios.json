@@ -27,5 +27,16 @@
                 "herdr": true
             }
         }
+    },
+    "skills_enabled": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "macha-features": {
+                "claude": true,
+                "codex": true,
+                "haikuShunt": true,
+                "lunaShunt": true
+            }
+        }
     }
 }

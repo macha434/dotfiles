@@ -7,11 +7,13 @@ agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.9": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.10": {
         "claude": true,
         "codex": false,
         "copilot": false,
-        "herdr": false
+        "herdr": false,
+        "haikuShunt": false,
+        "lunaShunt": false
     }
 }
 ```
@@ -20,7 +22,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.9": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.10": { "claude": true }
 }
 ```
 
@@ -32,6 +34,8 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `codex` | boolean | `false` | Codex CLI を入れる |
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
+| `haikuShunt` | boolean | `false` | [haiku-shunt](https://github.com/macha434/haiku-shunt) を Claude Code plugin として入れる(`claude` が有効な場合のみ意味を持つ) |
+| `lunaShunt` | boolean | `false` | [luna-shunt](https://github.com/macha434/luna-shunt) を Codex plugin として入れる(`codex` が有効な場合のみ意味を持つ) |
 
 **永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot`・
 `~/.config/gh` はどの値でも volume に載る。`gh` には CLI 導入や設定テンプレートに対応する
@@ -87,6 +91,7 @@ volume "agent-state"
 | **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
+| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | haiku-shunt / luna-shunt の marketplace 追加とインストール | プラグインは `~/.claude/plugins/`・`~/.codex/plugins/`(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
 
 ### Codex だけ扱いが違う理由
 
@@ -280,6 +285,30 @@ CLI のインストールは remote user で走らせている。Claude Code と
 を読むことになりインストーラを一切実行しない。curl 側も書き込み先を読む相手が
 いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
 CI で実際に踏んだ）。
+
+## haiku-shunt / luna-shunt
+
+`haikuShunt`・`lunaShunt` オプションが決めるのは有効/無効だけで、「何を」
+インストールするかは [`claude-skills.json`](./claude-skills.json)・
+[`codex-skills.json`](./codex-skills.json) というカタログ(名前だけの
+JSON 配列)に分けて持たせている。プラグインを増やすときはオプションに
+1行足すのと、対応するカタログに名前を1つ足すのを両方やる。
+
+```json
+// claude-skills.json
+["haiku-shunt"]
+```
+
+すべてのプラグインは `macha434/<name>` リポジトリ・`macha434-plugins`
+マーケットプレースという同じ命名規則に従う前提なので、カタログには
+プラグイン名だけを書けば済む(リポジトリ URL やマーケットプレース名を
+個別に持たせていない)。
+
+`ensure-skills.sh` は `claude plugin list --json` / `codex plugin list
+--json` で既にインストール済みかどうかを先に見てから
+`marketplace add` → `install` を行う。config.toml と同じ「無いときだけ
+やる」方式で、コンテナを作り直すたびに同じネットワーク越しの処理を
+繰り返さない。
 
 ## 運用
 
