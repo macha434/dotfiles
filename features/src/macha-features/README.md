@@ -7,11 +7,14 @@ agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.9": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.10": {
         "claude": true,
         "codex": false,
         "copilot": false,
-        "herdr": false
+        "herdr": false,
+        "claudeSkills": false,
+        "codexSkills": false,
+        "copilotSkills": false
     }
 }
 ```
@@ -20,7 +23,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.9": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.10": { "claude": true }
 }
 ```
 
@@ -32,6 +35,9 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `codex` | boolean | `false` | Codex CLI を入れる |
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
+| `claudeSkills` | boolean | `false` | [`claude-skills.json`](./claude-skills.json) に載っている Claude Code plugin を全部入れる(`claude` が有効な場合のみ意味を持つ) |
+| `codexSkills` | boolean | `false` | [`codex-skills.json`](./codex-skills.json) に載っている Codex plugin を全部入れる(`codex` が有効な場合のみ意味を持つ) |
+| `copilotSkills` | boolean | `false` | [`copilot-skills.json`](./copilot-skills.json) に載っている Copilot plugin を全部入れる(`copilot` が有効な場合のみ意味を持つ)。今のところカタログは空 |
 
 **永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot`・
 `~/.config/gh` はどの値でも volume に載る。`gh` には CLI 導入や設定テンプレートに対応する
@@ -87,6 +93,7 @@ volume "agent-state"
 | **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
+| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | haiku-shunt / luna-shunt の marketplace 追加とインストール | プラグインは `~/.claude/plugins/`・`~/.codex/plugins/`(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
 
 ### Codex だけ扱いが違う理由
 
@@ -280,6 +287,52 @@ CLI のインストールは remote user で走らせている。Claude Code と
 を読むことになりインストーラを一切実行しない。curl 側も書き込み先を読む相手が
 いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
 CI で実際に踏んだ）。
+
+## haiku-shunt / luna-shunt / copilot plugin
+
+`claudeSkills`・`codexSkills`・`copilotSkills` は「入れるか入れないか」の
+一つの switch で、「何を」インストールするかは持たない。中身は
+[`claude-skills.json`](./claude-skills.json)・
+[`codex-skills.json`](./codex-skills.json)・
+[`copilot-skills.json`](./copilot-skills.json) というカタログに分けて
+持たせている。`claudeSkills: true` はこのカタログに載っている Claude Code
+plugin を**全部**入れる、という意味になる。
+
+```json
+// claude-skills.json
+[
+  {
+    "name": "haiku-shunt",
+    "repo": "macha434/haiku-shunt",
+    "marketplace": "macha434-plugins"
+  }
+]
+```
+
+各エントリは `name`(`plugin install <name>@<marketplace>` の名前)・
+`repo`(`plugin marketplace add` に渡す `owner/repo`)・
+`marketplace`(そのリポジトリの marketplace.json が自称する名前)の3つを
+持つ。特定のリポジトリ命名規則には依存しないので、macha434 以外が
+作ったプラグインもそのまま同じカタログに並べられる。
+
+プラグインを増やすときはこのカタログにエントリを1つ足すだけでよい。
+`devcontainer-feature.json` の options は触らないので、既に
+`claudeSkills: true` にしている側は何もしなくても次に作り直した
+コンテナから新しいプラグインが入る。`copilot-skills.json` は今のところ
+`[]`(対応する Copilot plugin がまだ無い)。
+
+`ensure-skills.sh` は claude/codex については `plugin list --json` で、
+copilot については(`--json` 非対応のため)`~/.copilot/installed-plugins/
+<marketplace>/<name>` の実在チェックで、既にインストール済みかどうかを
+先に見てから `marketplace add` → `install` を行う。config.toml と同じ
+「無いときだけやる」方式で、コンテナを作り直すたびに同じネットワーク
+越しの処理を繰り返さない。
+
+**Copilot 向けに新しいプラグインを追加する場合の注意:** Copilot の
+`marketplace.json` は Claude/Codex とスキーマが違う(`owner` がオブジェクト
+必須、`plugins[].source` は相対パスの文字列直書き)。haiku-shunt/luna-shunt
+の `.claude-plugin/marketplace.json` をそのまま流用できないので、
+Copilot 向けの marketplace.json は別途用意すること(実機で検証済み)。
 
 ## 運用
 
