@@ -19,7 +19,7 @@ for f in claude/statusline-command.sh claude/settings.json claude/keybindings.js
          codex/config.toml \
          copilot/statusline-command.sh copilot/settings.json \
          herdr/config.toml \
-         claude-skills.json codex-skills.json; do
+         claude-skills.json codex-skills.json copilot-skills.json; do
     if [ ! -f "$SRC/$f" ]; then
         echo "macha-features: $f が無い。features/sync-assets.sh を先に実行すること" >&2
         exit 1
@@ -74,7 +74,8 @@ fi
 # ---- jq ------------------------------------------------------------------
 # entrypoint.sh のテンプレートマージと statusline、ensure-skills.sh の冪等判定に要る
 if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ] \
-     || [ "${CLAUDE_SKILLS:-false}" = "true" ] || [ "${CODEX_SKILLS:-false}" = "true" ]; } \
+     || [ "${CLAUDE_SKILLS:-false}" = "true" ] || [ "${CODEX_SKILLS:-false}" = "true" ] \
+     || [ "${COPILOT_SKILLS:-false}" = "true" ]; } \
    && ! command -v jq >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
         echo "macha-features: jq を入れる"
@@ -136,6 +137,7 @@ install -m 755 "$SRC/ensure-codex.sh"        "$SHARE/ensure-codex.sh"
 install -m 755 "$SRC/ensure-skills.sh"       "$SHARE/ensure-skills.sh"
 install -m 644 "$SRC/claude-skills.json"     "$SHARE/claude-skills.json"
 install -m 644 "$SRC/codex-skills.json"      "$SHARE/codex-skills.json"
+install -m 644 "$SRC/copilot-skills.json"    "$SHARE/copilot-skills.json"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、entrypoint 用に焼き込む
 {
@@ -147,8 +149,9 @@ install -m 644 "$SRC/codex-skills.json"      "$SHARE/codex-skills.json"
     printf 'CODEX=%q\n'         "${CODEX:-false}"
     printf 'COPILOT=%q\n'       "${COPILOT:-false}"
     printf 'HERDR=%q\n'         "${HERDR:-false}"
-    printf 'CLAUDE_SKILLS=%q\n' "${CLAUDE_SKILLS:-false}"
-    printf 'CODEX_SKILLS=%q\n'  "${CODEX_SKILLS:-false}"
+    printf 'CLAUDE_SKILLS=%q\n'  "${CLAUDE_SKILLS:-false}"
+    printf 'CODEX_SKILLS=%q\n'   "${CODEX_SKILLS:-false}"
+    printf 'COPILOT_SKILLS=%q\n' "${COPILOT_SKILLS:-false}"
 } > "$SHARE/config"
 chmod 644 "$SHARE/config"
 

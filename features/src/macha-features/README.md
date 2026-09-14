@@ -13,7 +13,8 @@ agent の CLI 導入とステータスラインの適用も行う。
         "copilot": false,
         "herdr": false,
         "claudeSkills": false,
-        "codexSkills": false
+        "codexSkills": false,
+        "copilotSkills": false
     }
 }
 ```
@@ -36,6 +37,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
 | `claudeSkills` | boolean | `false` | [`claude-skills.json`](./claude-skills.json) に載っている Claude Code plugin を全部入れる(`claude` が有効な場合のみ意味を持つ) |
 | `codexSkills` | boolean | `false` | [`codex-skills.json`](./codex-skills.json) に載っている Codex plugin を全部入れる(`codex` が有効な場合のみ意味を持つ) |
+| `copilotSkills` | boolean | `false` | [`copilot-skills.json`](./copilot-skills.json) に載っている Copilot plugin を全部入れる(`copilot` が有効な場合のみ意味を持つ)。今のところカタログは空 |
 
 **永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot`・
 `~/.config/gh` はどの値でも volume に載る。`gh` には CLI 導入や設定テンプレートに対応する
@@ -286,12 +288,13 @@ CLI のインストールは remote user で走らせている。Claude Code と
 いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
 CI で実際に踏んだ）。
 
-## haiku-shunt / luna-shunt
+## haiku-shunt / luna-shunt / copilot plugin
 
-`claudeSkills`・`codexSkills` は「入れるか入れないか」の一つの switch で、
-「何を」インストールするかは持たない。中身は
+`claudeSkills`・`codexSkills`・`copilotSkills` は「入れるか入れないか」の
+一つの switch で、「何を」インストールするかは持たない。中身は
 [`claude-skills.json`](./claude-skills.json)・
-[`codex-skills.json`](./codex-skills.json) というカタログ(名前だけの
+[`codex-skills.json`](./codex-skills.json)・
+[`copilot-skills.json`](./copilot-skills.json) というカタログ(名前だけの
 JSON 配列)に分けて持たせている。`claudeSkills: true` はこのカタログに
 載っている Claude Code plugin を**全部**入れる、という意味になる。
 
@@ -303,18 +306,26 @@ JSON 配列)に分けて持たせている。`claudeSkills: true` はこのカ�
 プラグインを増やすときはこのカタログに名前を1行足すだけでよい。
 `devcontainer-feature.json` の options は触らないので、既に
 `claudeSkills: true` にしている側は何もしなくても次に作り直した
-コンテナから新しいプラグインが入る。
+コンテナから新しいプラグインが入る。`copilot-skills.json` は今のところ
+`[]`(対応する Copilot plugin がまだ無い)。
 
 すべてのプラグインは `macha434/<name>` リポジトリ・`macha434-plugins`
 マーケットプレースという同じ命名規則に従う前提なので、カタログには
 プラグイン名だけを書けば済む(リポジトリ URL やマーケットプレース名を
 個別に持たせていない)。
 
-`ensure-skills.sh` は `claude plugin list --json` / `codex plugin list
---json` で既にインストール済みかどうかを先に見てから
-`marketplace add` → `install` を行う。config.toml と同じ「無いときだけ
-やる」方式で、コンテナを作り直すたびに同じネットワーク越しの処理を
-繰り返さない。
+`ensure-skills.sh` は claude/codex については `plugin list --json` で、
+copilot については(`--json` 非対応のため)`~/.copilot/installed-plugins/
+<marketplace>/<name>` の実在チェックで、既にインストール済みかどうかを
+先に見てから `marketplace add` → `install` を行う。config.toml と同じ
+「無いときだけやる」方式で、コンテナを作り直すたびに同じネットワーク
+越しの処理を繰り返さない。
+
+**Copilot 向けに新しいプラグインを追加する場合の注意:** Copilot の
+`marketplace.json` は Claude/Codex とスキーマが違う(`owner` がオブジェクト
+必須、`plugins[].source` は相対パスの文字列直書き)。haiku-shunt/luna-shunt
+の `.claude-plugin/marketplace.json` をそのまま流用できないので、
+Copilot 向けの marketplace.json は別途用意すること(実機で検証済み)。
 
 ## 運用
 

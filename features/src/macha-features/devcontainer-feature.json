@@ -34,6 +34,11 @@
             "type": "boolean",
             "default": false,
             "description": "Install every Codex CLI plugin listed in codex-skills.json (requires codex)"
+        },
+        "copilotSkills": {
+            "type": "boolean",
+            "default": false,
+            "description": "Install every GitHub Copilot CLI plugin listed in copilot-skills.json (requires copilot)"
         }
     },
     "mounts": [

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # postCreateCommand としてコンテナ作成後に remote user で走る (ensure-codex.sh の後)。
-# claudeSkills/codexSkills が true なら、claude-skills.json / codex-skills.json
-# に載っている名前を全部、対応する CLI のプラグインとして冪等に入れる。
-# カタログにエントリを足すだけで有効になるので、この option 自体は変えない。
-# 個々のプラグインは常に macha434/<name> リポジトリ・macha434-plugins
-# マーケットプレースという同じ命名規則に従う。
+# claudeSkills/codexSkills/copilotSkills が true なら、claude-skills.json /
+# codex-skills.json / copilot-skills.json に載っている名前を全部、対応する
+# CLI のプラグインとして冪等に入れる。カタログにエントリを足すだけで有効に
+# なるので、この option 自体は変えない。個々のプラグインは常に
+# macha434/<name> リポジトリ・macha434-plugins マーケットプレースという
+# 同じ命名規則に従う。
 set -eu
 
 SHARE=/usr/local/share/macha-features
@@ -59,6 +60,33 @@ install_codex_skill() {
     codex plugin add "$name@$MARKETPLACE" || echo "macha-features: $name のインストールに失敗した" >&2
 }
 
+install_copilot_skill() {
+    # copilot plugin list / marketplace list には --json が無いため、CLI の
+    # テキスト出力ではなく実際のインストール先ディレクトリで冪等性を見る
+    # (ensure-codex.sh が codex バイナリの実体で見ているのと同じ考え方)。
+    # 実機で確認済み: GitHub 由来のインストールは
+    # ~/.copilot/installed-plugins/<marketplace>/<name> に実体ができる。
+    #
+    # 注意: Copilot の marketplace.json は Claude/Codex とスキーマが違う
+    # (owner がオブジェクト必須、plugins[].source が相対パスの文字列直書き)。
+    # copilot-skills.json にエントリを足すなら、その対象リポジトリは
+    # Copilot 向けの marketplace.json を別途用意する必要がある。
+    local name=$1
+    command -v copilot >/dev/null 2>&1 || { echo "macha-features: copilot CLI が無いので $name をスキップ" >&2; return 0; }
+
+    local installed_dir="$HOME/.copilot/installed-plugins/$MARKETPLACE/$name"
+
+    if ! copilot plugin marketplace list 2>/dev/null | grep -qF "$MARKETPLACE "; then
+        echo "macha-features: copilot marketplace $MARKETPLACE を追加する"
+        copilot plugin marketplace add "macha434/$name" || echo "macha-features: $MARKETPLACE の追加に失敗した" >&2
+    fi
+
+    [ -d "$installed_dir" ] && return 0
+
+    echo "macha-features: copilot plugin $name を入れる"
+    copilot plugin install "$name@$MARKETPLACE" || echo "macha-features: $name のインストールに失敗した" >&2
+}
+
 if [ "${CLAUDE:-false}" = "true" ] && [ "${CLAUDE_SKILLS:-false}" = "true" ]; then
     while IFS= read -r name; do
         [ -n "$name" ] && install_claude_skill "$name"
@@ -69,4 +97,10 @@ if [ "${CODEX:-false}" = "true" ] && [ "${CODEX_SKILLS:-false}" = "true" ]; then
     while IFS= read -r name; do
         [ -n "$name" ] && install_codex_skill "$name"
     done < <(catalog_names "$SHARE/codex-skills.json")
+fi
+
+if [ "${COPILOT:-false}" = "true" ] && [ "${COPILOT_SKILLS:-false}" = "true" ]; then
+    while IFS= read -r name; do
+        [ -n "$name" ] && install_copilot_skill "$name"
+    done < <(catalog_names "$SHARE/copilot-skills.json")
 fi
