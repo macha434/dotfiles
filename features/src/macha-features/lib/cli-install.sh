@@ -11,8 +11,8 @@ curl_pipe_install() {
 # 対象 option のいずれかが有効なときだけ jq を入れる
 ensure_jq() {
     { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ] \
-      || [ "${CLAUDE_SKILLS:-false}" = "true" ] || [ "${CODEX_SKILLS:-false}" = "true" ] \
-      || [ "${COPILOT_SKILLS:-false}" = "true" ]; } || return 0
+      || [ "${CLAUDESKILLS:-false}" = "true" ] || [ "${CODEXSKILLS:-false}" = "true" ] \
+      || [ "${COPILOTSKILLS:-false}" = "true" ]; } || return 0
     command -v jq >/dev/null 2>&1 && return 0
 
     if command -v apt-get >/dev/null 2>&1; then
