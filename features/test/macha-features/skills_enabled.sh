@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# haikuShunt/lunaShunt を有効にした場合。ネットワーク越しに実際の
-# macha434/haiku-shunt・macha434/luna-shunt リポジトリを marketplace として
-# 追加してインストールするところまで見る。
+# claudeSkills/codexSkills を有効にした場合。カタログ(claude-skills.json /
+# codex-skills.json)に載っている全プラグインが、ネットワーク越しに実際の
+# macha434/haiku-shunt・macha434/luna-shunt リポジトリから marketplace 追加
+# → インストールされるところまで見る。
 set -e
 source dev-container-features-test-lib
 
 SHARE=/usr/local/share/macha-features
 
 check "config に skill オプションが焼かれている" \
-    bash -c 'grep -q "^HAIKU_SHUNT=true$" '"$SHARE"'/config \
-             && grep -q "^LUNA_SHUNT=true$" '"$SHARE"'/config'
+    bash -c 'grep -q "^CLAUDE_SKILLS=true$" '"$SHARE"'/config \
+             && grep -q "^CODEX_SKILLS=true$" '"$SHARE"'/config'
 
 check "ensure-skills.sh が実行可能" test -x "$SHARE/ensure-skills.sh"
 

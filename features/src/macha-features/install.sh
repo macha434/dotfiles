@@ -74,7 +74,7 @@ fi
 # ---- jq ------------------------------------------------------------------
 # entrypoint.sh のテンプレートマージと statusline、ensure-skills.sh の冪等判定に要る
 if { [ "${CLAUDE:-false}" = "true" ] || [ "${COPILOT:-false}" = "true" ] \
-     || [ "${HAIKU_SHUNT:-false}" = "true" ] || [ "${LUNA_SHUNT:-false}" = "true" ]; } \
+     || [ "${CLAUDE_SKILLS:-false}" = "true" ] || [ "${CODEX_SKILLS:-false}" = "true" ]; } \
    && ! command -v jq >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
         echo "macha-features: jq を入れる"
@@ -143,12 +143,12 @@ install -m 644 "$SRC/codex-skills.json"      "$SHARE/codex-skills.json"
     printf 'HOME_DIR=%q\n' "$HOME_DIR"
     printf 'STATE=%q\n'    "$STATE"
     printf 'AGENTS=(%s)\n' "${AGENTS[*]}"
-    printf 'CLAUDE=%q\n'      "${CLAUDE:-false}"
-    printf 'CODEX=%q\n'       "${CODEX:-false}"
-    printf 'COPILOT=%q\n'     "${COPILOT:-false}"
-    printf 'HERDR=%q\n'       "${HERDR:-false}"
-    printf 'HAIKU_SHUNT=%q\n' "${HAIKU_SHUNT:-false}"
-    printf 'LUNA_SHUNT=%q\n'  "${LUNA_SHUNT:-false}"
+    printf 'CLAUDE=%q\n'        "${CLAUDE:-false}"
+    printf 'CODEX=%q\n'         "${CODEX:-false}"
+    printf 'COPILOT=%q\n'       "${COPILOT:-false}"
+    printf 'HERDR=%q\n'         "${HERDR:-false}"
+    printf 'CLAUDE_SKILLS=%q\n' "${CLAUDE_SKILLS:-false}"
+    printf 'CODEX_SKILLS=%q\n'  "${CODEX_SKILLS:-false}"
 } > "$SHARE/config"
 chmod 644 "$SHARE/config"
 

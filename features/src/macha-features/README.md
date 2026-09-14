@@ -12,8 +12,8 @@ agent の CLI 導入とステータスラインの適用も行う。
         "codex": false,
         "copilot": false,
         "herdr": false,
-        "haikuShunt": false,
-        "lunaShunt": false
+        "claudeSkills": false,
+        "codexSkills": false
     }
 }
 ```
@@ -34,8 +34,8 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `codex` | boolean | `false` | Codex CLI を入れる |
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
-| `haikuShunt` | boolean | `false` | [haiku-shunt](https://github.com/macha434/haiku-shunt) を Claude Code plugin として入れる(`claude` が有効な場合のみ意味を持つ) |
-| `lunaShunt` | boolean | `false` | [luna-shunt](https://github.com/macha434/luna-shunt) を Codex plugin として入れる(`codex` が有効な場合のみ意味を持つ) |
+| `claudeSkills` | boolean | `false` | [`claude-skills.json`](./claude-skills.json) に載っている Claude Code plugin を全部入れる(`claude` が有効な場合のみ意味を持つ) |
+| `codexSkills` | boolean | `false` | [`codex-skills.json`](./codex-skills.json) に載っている Codex plugin を全部入れる(`codex` が有効な場合のみ意味を持つ) |
 
 **永続化はオプションに関わらず常に行う。** `~/.claude`・`~/.codex`・`~/.copilot`・
 `~/.config/gh` はどの値でも volume に載る。`gh` には CLI 導入や設定テンプレートに対応する
@@ -288,16 +288,22 @@ CI で実際に踏んだ）。
 
 ## haiku-shunt / luna-shunt
 
-`haikuShunt`・`lunaShunt` オプションが決めるのは有効/無効だけで、「何を」
-インストールするかは [`claude-skills.json`](./claude-skills.json)・
+`claudeSkills`・`codexSkills` は「入れるか入れないか」の一つの switch で、
+「何を」インストールするかは持たない。中身は
+[`claude-skills.json`](./claude-skills.json)・
 [`codex-skills.json`](./codex-skills.json) というカタログ(名前だけの
-JSON 配列)に分けて持たせている。プラグインを増やすときはオプションに
-1行足すのと、対応するカタログに名前を1つ足すのを両方やる。
+JSON 配列)に分けて持たせている。`claudeSkills: true` はこのカタログに
+載っている Claude Code plugin を**全部**入れる、という意味になる。
 
 ```json
 // claude-skills.json
 ["haiku-shunt"]
 ```
+
+プラグインを増やすときはこのカタログに名前を1行足すだけでよい。
+`devcontainer-feature.json` の options は触らないので、既に
+`claudeSkills: true` にしている側は何もしなくても次に作り直した
+コンテナから新しいプラグインが入る。
 
 すべてのプラグインは `macha434/<name>` リポジトリ・`macha434-plugins`
 マーケットプレースという同じ命名規則に従う前提なので、カタログには

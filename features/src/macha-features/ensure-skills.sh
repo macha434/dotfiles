@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # postCreateCommand としてコンテナ作成後に remote user で走る (ensure-codex.sh の後)。
-# claude-skills.json / codex-skills.json に載っている名前だけを、対応する
-# CLI のプラグインとして冪等に入れる。個々のプラグインは常に macha434/<name>
-# リポジトリ・macha434-plugins マーケットプレースという同じ命名規則に従う。
+# claudeSkills/codexSkills が true なら、claude-skills.json / codex-skills.json
+# に載っている名前を全部、対応する CLI のプラグインとして冪等に入れる。
+# カタログにエントリを足すだけで有効になるので、この option 自体は変えない。
+# 個々のプラグインは常に macha434/<name> リポジトリ・macha434-plugins
+# マーケットプレースという同じ命名規則に従う。
 set -eu
 
 SHARE=/usr/local/share/macha-features
@@ -15,18 +17,17 @@ export PATH="$HOME/.local/bin:$PATH"
 
 MARKETPLACE="macha434-plugins"
 
-skill_enabled() {
-    # $1: カタログ (JSON配列) のパス  $2: 探す名前
-    local catalog=$1 name=$2
-    [ -f "$catalog" ] || return 1
-    command -v jq >/dev/null 2>&1 || return 1
-    jq -e --arg n "$name" 'any(.[]; . == $n)' "$catalog" >/dev/null 2>&1
+catalog_names() {
+    # $1: カタログ (JSON配列) のパス
+    local catalog=$1
+    [ -f "$catalog" ] || return 0
+    command -v jq >/dev/null 2>&1 || return 0
+    jq -r '.[]' "$catalog" 2>/dev/null
 }
 
 install_claude_skill() {
     local name=$1
     command -v claude >/dev/null 2>&1 || { echo "macha-features: claude CLI が無いので $name をスキップ" >&2; return 0; }
-    command -v jq >/dev/null 2>&1 || { echo "macha-features: jq が無いので $name をスキップ" >&2; return 0; }
 
     if ! claude plugin marketplace list --json 2>/dev/null | jq -e --arg m "$MARKETPLACE" 'any(.[]; .name == $m)' >/dev/null 2>&1; then
         echo "macha-features: claude marketplace $MARKETPLACE を追加する"
@@ -44,7 +45,6 @@ install_claude_skill() {
 install_codex_skill() {
     local name=$1
     command -v codex >/dev/null 2>&1 || { echo "macha-features: codex CLI が無いので $name をスキップ" >&2; return 0; }
-    command -v jq >/dev/null 2>&1 || { echo "macha-features: jq が無いので $name をスキップ" >&2; return 0; }
 
     if ! codex plugin marketplace list --json 2>/dev/null | jq -e --arg m "$MARKETPLACE" 'any(.marketplaces[]?; .name == $m)' >/dev/null 2>&1; then
         echo "macha-features: codex marketplace $MARKETPLACE を追加する"
@@ -59,14 +59,14 @@ install_codex_skill() {
     codex plugin add "$name@$MARKETPLACE" || echo "macha-features: $name のインストールに失敗した" >&2
 }
 
-if [ "${CLAUDE:-false}" = "true" ] && [ "${HAIKU_SHUNT:-false}" = "true" ]; then
-    if skill_enabled "$SHARE/claude-skills.json" "haiku-shunt"; then
-        install_claude_skill "haiku-shunt"
-    fi
+if [ "${CLAUDE:-false}" = "true" ] && [ "${CLAUDE_SKILLS:-false}" = "true" ]; then
+    while IFS= read -r name; do
+        [ -n "$name" ] && install_claude_skill "$name"
+    done < <(catalog_names "$SHARE/claude-skills.json")
 fi
 
-if [ "${CODEX:-false}" = "true" ] && [ "${LUNA_SHUNT:-false}" = "true" ]; then
-    if skill_enabled "$SHARE/codex-skills.json" "luna-shunt"; then
-        install_codex_skill "luna-shunt"
-    fi
+if [ "${CODEX:-false}" = "true" ] && [ "${CODEX_SKILLS:-false}" = "true" ]; then
+    while IFS= read -r name; do
+        [ -n "$name" ] && install_codex_skill "$name"
+    done < <(catalog_names "$SHARE/codex-skills.json")
 fi

@@ -34,8 +34,8 @@
             "macha-features": {
                 "claude": true,
                 "codex": true,
-                "haikuShunt": true,
-                "lunaShunt": true
+                "claudeSkills": true,
+                "codexSkills": true
             }
         }
     }

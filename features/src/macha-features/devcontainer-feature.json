@@ -25,15 +25,15 @@
             "default": false,
             "description": "Install herdr"
         },
-        "haikuShunt": {
+        "claudeSkills": {
             "type": "boolean",
             "default": false,
-            "description": "Install the haiku-shunt Claude Code plugin (requires claude)"
+            "description": "Install every Claude Code plugin listed in claude-skills.json (requires claude)"
         },
-        "lunaShunt": {
+        "codexSkills": {
             "type": "boolean",
             "default": false,
-            "description": "Install the luna-shunt Codex CLI plugin (requires codex)"
+            "description": "Install every Codex CLI plugin listed in codex-skills.json (requires codex)"
         }
     },
     "mounts": [
