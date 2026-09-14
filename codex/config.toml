@@ -31,3 +31,7 @@ status_line = [
     "five-hour-limit",
     "weekly-limit",
 ]
+
+[tui.keymap.global]
+# デフォルトの esc esc (2回押し) は Create task との誤爆が多いため left に変更する。
+open_agents = ["left"]
