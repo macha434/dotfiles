@@ -294,25 +294,32 @@ CI で実際に踏んだ）。
 一つの switch で、「何を」インストールするかは持たない。中身は
 [`claude-skills.json`](./claude-skills.json)・
 [`codex-skills.json`](./codex-skills.json)・
-[`copilot-skills.json`](./copilot-skills.json) というカタログ(名前だけの
-JSON 配列)に分けて持たせている。`claudeSkills: true` はこのカタログに
-載っている Claude Code plugin を**全部**入れる、という意味になる。
+[`copilot-skills.json`](./copilot-skills.json) というカタログに分けて
+持たせている。`claudeSkills: true` はこのカタログに載っている Claude Code
+plugin を**全部**入れる、という意味になる。
 
 ```json
 // claude-skills.json
-["haiku-shunt"]
+[
+  {
+    "name": "haiku-shunt",
+    "repo": "macha434/haiku-shunt",
+    "marketplace": "macha434-plugins"
+  }
+]
 ```
 
-プラグインを増やすときはこのカタログに名前を1行足すだけでよい。
+各エントリは `name`(`plugin install <name>@<marketplace>` の名前)・
+`repo`(`plugin marketplace add` に渡す `owner/repo`)・
+`marketplace`(そのリポジトリの marketplace.json が自称する名前)の3つを
+持つ。特定のリポジトリ命名規則には依存しないので、macha434 以外が
+作ったプラグインもそのまま同じカタログに並べられる。
+
+プラグインを増やすときはこのカタログにエントリを1つ足すだけでよい。
 `devcontainer-feature.json` の options は触らないので、既に
 `claudeSkills: true` にしている側は何もしなくても次に作り直した
 コンテナから新しいプラグインが入る。`copilot-skills.json` は今のところ
 `[]`(対応する Copilot plugin がまだ無い)。
-
-すべてのプラグインは `macha434/<name>` リポジトリ・`macha434-plugins`
-マーケットプレースという同じ命名規則に従う前提なので、カタログには
-プラグイン名だけを書けば済む(リポジトリ URL やマーケットプレース名を
-個別に持たせていない)。
 
 `ensure-skills.sh` は claude/codex については `plugin list --json` で、
 copilot については(`--json` 非対応のため)`~/.copilot/installed-plugins/

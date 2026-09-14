@@ -1,1 +1,7 @@
-["haiku-shunt"]
+[
+  {
+    "name": "haiku-shunt",
+    "repo": "macha434/haiku-shunt",
+    "marketplace": "macha434-plugins"
+  }
+]

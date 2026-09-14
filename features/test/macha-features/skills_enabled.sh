@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # claudeSkills/codexSkills/copilotSkills を有効にした場合。カタログ
-# (claude-skills.json / codex-skills.json)に載っている全プラグインが、
-# ネットワーク越しに実際の macha434/haiku-shunt・macha434/luna-shunt
-# リポジトリから marketplace 追加 → インストールされるところまで見る。
-# copilot-skills.json は今のところ空(該当プラグインが無い)なので、
-# copilot 側は option の配線だけ見て、実際のインストールは検査しない。
+# (claude-skills.json / codex-skills.json)の各エントリが持つ repo から
+# 実際にネットワーク越しに marketplace 追加 → インストールされるところ
+# まで見る (現状どちらも macha434 配下だが、カタログの repo フィールドが
+# 指すものなら誰のリポジトリでもよい)。copilot-skills.json は今のところ
+# 空(該当プラグインが無い)なので、copilot 側は option の配線だけ見て、
+# 実際のインストールは検査しない。
 set -e
 source dev-container-features-test-lib
 
@@ -18,9 +19,13 @@ check "config に skill オプションが焼かれている" \
 check "ensure-skills.sh が実行可能" test -x "$SHARE/ensure-skills.sh"
 
 check "claude-skills.json が SHARE に置かれている" \
-    bash -c '[ "$(jq -r ".[0]" '"$SHARE"'/claude-skills.json)" = haiku-shunt ]'
+    bash -c '[ "$(jq -r ".[0].name" '"$SHARE"'/claude-skills.json)" = haiku-shunt ] \
+             && [ "$(jq -r ".[0].repo" '"$SHARE"'/claude-skills.json)" = macha434/haiku-shunt ] \
+             && [ "$(jq -r ".[0].marketplace" '"$SHARE"'/claude-skills.json)" = macha434-plugins ]'
 check "codex-skills.json が SHARE に置かれている" \
-    bash -c '[ "$(jq -r ".[0]" '"$SHARE"'/codex-skills.json)" = luna-shunt ]'
+    bash -c '[ "$(jq -r ".[0].name" '"$SHARE"'/codex-skills.json)" = luna-shunt ] \
+             && [ "$(jq -r ".[0].repo" '"$SHARE"'/codex-skills.json)" = macha434/luna-shunt ] \
+             && [ "$(jq -r ".[0].marketplace" '"$SHARE"'/codex-skills.json)" = macha434-plugins ]'
 check "copilot-skills.json が SHARE に置かれている(空カタログ)" \
     bash -c '[ "$(jq -r "length" '"$SHARE"'/copilot-skills.json)" = 0 ]'
 
