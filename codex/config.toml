@@ -33,5 +33,6 @@ status_line = [
 ]
 
 [tui.keymap.global]
-# デフォルトの esc esc (2回押し) は Create task との誤爆が多いため left に変更する。
-open_agents = ["left"]
+# デフォルトの esc esc (2回押し) は Create task との誤爆が多いため変更する。
+# left はエディタの move_left と衝突し起動時エラーになったため ctrl-t にした。
+open_agents = ["ctrl-t"]
