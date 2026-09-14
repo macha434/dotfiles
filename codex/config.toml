@@ -12,6 +12,10 @@ approval_policy = "on-request"
 # 制限なし全アクセス。approval_policy とは独立なので承認後もサンドボックスに縛られない。
 sandbox_mode = "danger-full-access"
 
+[features]
+# multi_agent は stable でデフォルト有効。multi_agent_v2 は stable だがデフォルト無効のため明示的に有効化。
+multi_agent_v2 = true
+
 [tui]
 # editorMode: "vim" に対応する。
 vim_mode_default = true
