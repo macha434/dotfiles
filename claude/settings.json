@@ -14,6 +14,14 @@
     "command": "~/.claude/statusline-command.sh",
     "hideVimModeIndicator": true
   },
+  "extraKnownMarketplaces": {
+    "macha434-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "macha434/lean"
+      }
+    }
+  },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
@@ -24,5 +32,8 @@
   "editorMode": "vim",
   "remoteControlAtStartup": true,
   "crossSessionInbound": "accept",
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "enabledPlugins": {
+    "lean@macha434-plugins": true
+  }
 }
