@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Claude Code のユーザー設定を ~/.claude/ に配置する。
 # Claude Code は自分が動いている環境のホームを見るため OS ごとの分岐は無い (vscode.sh と違う)。
-# keybindings.json はモデルピッカーの enter を「このセッションのみ」にし、既定の書き戻しで symlink 先が汚れるのを防ぐ (s キーは従来どおり)。
+# keybindings.json はモデルピッカーの enter を「このセッションのみ」にし、既定の書き戻しで配置元 (dotfiles リポジトリ側) が汚れるのを防ぐ (s キーは従来どおり)。
 
 install_file "$DOTFILES_ROOT/claude/statusline-command.sh" \
              "$HOME/.claude/statusline-command.sh"

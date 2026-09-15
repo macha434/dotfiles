@@ -90,7 +90,7 @@ if [ -n "${DOTFILES_WIN_APPDATA:-}" ]; then
 fi
 
 # ---- 設置 ---------------------------------------------------------------
-# install_file <src> <dest> : OS ごとに symlink かコピーで配置する。
+# install_file <src> <dest> : 常にコピーで配置する (symlink は張らない)。
 install_file() {
     local src=$1 dest=$2
     [ -f "$src" ] || die "元ファイルが無い: $src"
@@ -99,36 +99,35 @@ install_file() {
     dest_dir=$(dirname "$dest")
 
     if [ "${DRY_RUN:-0}" = 1 ]; then
-        if target_is_windows "$dest"; then
-            skip "(dry-run) copy   $dest"
-        else
-            skip "(dry-run) link   $dest"
-        fi
+        skip "(dry-run) copy   $dest"
         return
     fi
 
     mkdir -p "$dest_dir" || die "作成できない: $dest_dir"
 
-    if target_is_windows "$dest"; then
-        if [ -f "$dest" ] && diff -q --strip-trailing-cr "$src" "$dest" >/dev/null 2>&1; then
-            skip "同一 $dest"
-            return
+    if [ -f "$dest" ] && [ ! -L "$dest" ]; then
+        if target_is_windows "$dest"; then
+            if diff -q --strip-trailing-cr "$src" "$dest" >/dev/null 2>&1; then
+                skip "同一 $dest"
+                return
+            fi
+        else
+            if diff -q "$src" "$dest" >/dev/null 2>&1; then
+                skip "同一 $dest"
+                return
+            fi
         fi
-        _backup "$dest"
-        cp "$src" "$dest" || die "コピーできない: $dest"
-        ok "copy $dest"
-    else
-        if [ -L "$dest" ] && [ "$(readlink -f "$dest")" = "$(readlink -f "$src")" ]; then
-            skip "リンク済み $dest"
-            return
-        fi
-        _backup "$dest"
-        ln -sfn "$src" "$dest" || die "リンクできない: $dest"
-        ok "link $dest -> $src"
     fi
+
+    _backup "$dest"
+    # 旧バージョンが symlink を張っていた名残がある場合、そのまま cp すると
+    # リンク先 (= src 自身) に書き込んでしまうので、先に外しておく。
+    [ -L "$dest" ] && rm -f "$dest"
+    cp "$src" "$dest" || die "コピーできない: $dest"
+    ok "copy $dest"
 }
 
-# 設置前の状態を 1 度だけ退避する。symlink は張り替えるだけなので触らない。
+# 設置前の状態を 1 度だけ退避する。symlink (旧バージョンの名残) は退避不要。
 _backup() {
     local dest=$1
     local backup="$dest.dotfiles.bak"
