@@ -13,7 +13,7 @@
 ## 主な機能
 
 - Linux / WSL / macOS / Windows（Git Bash）を判別し、各ツールの既定の設定ディレクトリを解決する
-- Linux と macOS では symlink、Windows 側の設置先ではコピー。判断は設置先パスごとに行うので、WSL からの実行で両方を扱える
+- どの OS でもコピーで配置する（symlink は張らない）
 - ツールごとに `install.d/` へ1ファイル置くだけで、`install.sh` が自動で拾う
 - 元からあったファイルを初回だけ `<ファイル名>.dotfiles.bak` として退避する
 - 繰り返し実行できる。差分の無いファイルはスキップし、改行コードだけの違いは変更とみなさない
@@ -48,14 +48,14 @@ cd dotfiles
 
 配置先:
 
-| OS | 設置先 | 方式 |
-| --- | --- | --- |
-| Linux | `${XDG_CONFIG_HOME:-~/.config}/Code/User/` | symlink |
-| macOS | `~/Library/Application Support/Code/User/` | symlink |
-| Windows（Git Bash、MSYS2） | `%APPDATA%/Code/User/` | コピー |
-| WSL | Windows 側の `%APPDATA%/Code/User/` | コピー |
+| OS | 設置先 |
+| --- | --- |
+| Linux | `${XDG_CONFIG_HOME:-~/.config}/Code/User/` |
+| macOS | `~/Library/Application Support/Code/User/` |
+| Windows（Git Bash、MSYS2） | `%APPDATA%/Code/User/` |
+| WSL | Windows 側の `%APPDATA%/Code/User/` |
 
-WSL から `/mnt` 以下に張った symlink は Windows のアプリケーションから辿れないため、その設置先はコピーで扱う。したがって WSL でのインストールは一方向であり、このリポジトリのファイルを編集したら `./install.sh` を再実行する必要がある。
+すべてコピーで配置するため、インストールは一方向である。このリポジトリのファイルを編集したら `./install.sh` を再実行して反映する必要がある。
 
 WSL では Windows 側のパスにのみ配置する。`~/.config/Code` は Linux 側に VS Code が入っていなくても残っていることがあるため、存在の有無では判定しない。
 
@@ -91,7 +91,7 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 | `docs/` | 設計メモと実装プラン |
 | `features/assets.tsv` | packaging 前に feature へ複製する dotfiles の対応表 |
 
-ツールを追加するには、ファイルをディレクトリに置き、`install.d/<名前>.sh` を作る。`install.sh` は glob で拾うため、エントリポイント側の変更は不要である。スクリプト内では `$DOTFILES_ROOT` がリポジトリのルート、`$DOTFILES_OS` が判別結果を指し、`install_file <元> <設置先>` が退避・symlink とコピーの使い分け・`--dry-run` を引き受ける。
+ツールを追加するには、ファイルをディレクトリに置き、`install.d/<名前>.sh` を作る。`install.sh` は glob で拾うため、エントリポイント側の変更は不要である。スクリプト内では `$DOTFILES_ROOT` がリポジトリのルート、`$DOTFILES_OS` が判別結果を指し、`install_file <元> <設置先>` が退避・コピー・`--dry-run` を引き受ける。
 
 ## よくある質問
 

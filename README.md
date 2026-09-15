@@ -13,7 +13,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Key Features
 
 - Detects Linux, WSL, macOS and Git Bash on Windows, and resolves each tool's default config directory
-- Symlinks on Linux and macOS, copies for Windows destinations. The choice is made per destination path, so a WSL run can do both
+- Copies files into place on every OS (no symlinks)
 - One installer per tool under `install.d/`, picked up automatically by `install.sh`
 - Backs up what was already there, once, as `<file>.dotfiles.bak`
 - Re-runnable. Unchanged files are skipped, and line endings alone are not treated as a change
@@ -48,14 +48,14 @@ cd dotfiles
 
 Where files are placed:
 
-| OS | Destination | Method |
-| --- | --- | --- |
-| Linux | `${XDG_CONFIG_HOME:-~/.config}/Code/User/` | symlink |
-| macOS | `~/Library/Application Support/Code/User/` | symlink |
-| Windows (Git Bash, MSYS2) | `%APPDATA%/Code/User/` | copy |
-| WSL | Windows-side `%APPDATA%/Code/User/` | copy |
+| OS | Destination |
+| --- | --- |
+| Linux | `${XDG_CONFIG_HOME:-~/.config}/Code/User/` |
+| macOS | `~/Library/Application Support/Code/User/` |
+| Windows (Git Bash, MSYS2) | `%APPDATA%/Code/User/` |
+| WSL | Windows-side `%APPDATA%/Code/User/` |
 
-A symlink created from WSL under `/mnt` cannot be followed by Windows applications, so those destinations are copied instead. This means a WSL install is one-way: after editing a file in this repository, run `./install.sh` again.
+Everything is a copy, so the install is one-way: after editing a file in this repository, run `./install.sh` again to push the change out.
 
 On WSL only the Windows-side path is used. `~/.config/Code` can exist without VS Code being installed on the Linux side, so its presence is not used to decide.
 
@@ -91,7 +91,7 @@ Layout:
 | `docs/` | Design notes and implementation plans |
 | `features/assets.tsv` | Which dotfiles get copied into a feature before packaging, and where |
 
-To add a tool, drop its files in a directory and add `install.d/<name>.sh`. `install.sh` finds it by glob, so the entry point needs no change. Inside the script, `$DOTFILES_ROOT` points at the repository root, `$DOTFILES_OS` holds the detected OS, and `install_file <src> <dest>` handles backup, symlink or copy, and `--dry-run`.
+To add a tool, drop its files in a directory and add `install.d/<name>.sh`. `install.sh` finds it by glob, so the entry point needs no change. Inside the script, `$DOTFILES_ROOT` points at the repository root, `$DOTFILES_OS` holds the detected OS, and `install_file <src> <dest>` handles backup, copying, and `--dry-run`.
 
 ## FAQ
 
