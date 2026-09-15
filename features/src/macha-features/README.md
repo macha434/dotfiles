@@ -211,7 +211,7 @@ settings.json と違ってマージは要らない。`~/.claude/keybindings.json
 ```
 NORMAL                                              ← vim モード
 claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort / fast / コンテキスト
-5h 23% (4h00m)   7d 41% (3d00h)                     ← レート制限
+5h 23% (4h00m)   7d 41% (3d00h)   in 8.5k out 1.2k   ← レート制限 / トークン
 ```
 
 レート制限の色は**経過ぶんの線形ペース**との比較で決まる。5 時間窓なら 1 時間あたり 20% が
@@ -220,6 +220,9 @@ claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort
 
 コンテキストは 90% 以上で赤、70% 以上で黄色。存在しないフィールドは `--` になる
 （vim モード無効、effort 非対応モデル、最初の API 応答前など）。
+
+`in`/`out` は `context_window.total_input_tokens`/`total_output_tokens`。**セッション累計ではなく
+現在のコンテキストウィンドウに乗っているトークン数**で、`/compact` や `/clear` で減る・リセットされる。
 
 表示を変えたいときは `claude/statusline-command.sh` を編集する。ホスト側は
 `./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**

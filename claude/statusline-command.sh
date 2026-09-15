@@ -89,6 +89,18 @@ window_field() {
     printf '%s' "${D}${label}${R} $(pace_color "$used" "$reset" "$window" "$unit")${used%%.*}%${R} ${D}($(remaining "$reset"))${R}"
 }
 
-printf '%s   %s\n' \
+# total_input/output_tokens はコンテキストウィンドウ内の現在値であり、セッション累計ではない
+fmt_tok() {
+    awk -v n="$1" 'BEGIN {
+        if (n == "") { print "--"; exit }
+        if (n >= 1000) printf "%.1fk", n / 1000
+        else            printf "%d", n
+    }'
+}
+in_tok=$(fmt_tok "$(q '.context_window.total_input_tokens')")
+out_tok=$(fmt_tok "$(q '.context_window.total_output_tokens')")
+
+printf '%s   %s   %s\n' \
     "$(window_field 5h  .rate_limits.five_hour 5 3600)" \
-    "$(window_field 7d  .rate_limits.seven_day 7 86400)"
+    "$(window_field 7d  .rate_limits.seven_day 7 86400)" \
+    "${D}in${R} ${in_tok} ${D}out${R} ${out_tok}"
