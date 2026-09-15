@@ -637,5 +637,13 @@
         // サジェスト) に当たらない文脈にまで既定動作が残らないようにする。
         "key": "ctrl+j",
         "command": "-workbench.action.togglePanel"
+    },
+    {
+        // 既定の ctrl+m (Tab フォーカスモードのトグル) を解除。
+        // このモードが誤って有効になると、ターミナルで Tab を押しても
+        // シェルの補完に渡らず VS Code の次のフォーカス対象へ移動してしまう。
+        // 意図的に使わない機能なので、誤爆で入るキーバインド自体を消しておく。
+        "key": "ctrl+m",
+        "command": "-editor.action.toggleTabFocusMode"
     }
 ]

@@ -47,6 +47,11 @@
     "editor.snippetSuggestions": "inline",
     "editor.tabCompletion": "off",
 
+    // ===== エディタ: Tab キーの挙動 =====
+    // Tab フォーカスモード (Tab キーで UI 要素間を移動する挙動) を明示的に無効化。
+    // ctrl+m の誤爆で有効になるとターミナル/エディタで Tab が効かなくなるため。
+    "editor.tabFocusMode": false,
+
     // ===== エディタ: 自動フォーマット =====
     // 注: files.autoSave が afterDelay の間、formatOnSave は発火しない
     //     (VS Code は自動保存では整形をスキップする)。
