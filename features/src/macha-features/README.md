@@ -93,7 +93,7 @@ volume "agent-state"
 | **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
-| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | haiku-shunt / luna-shunt の marketplace 追加とインストール | プラグインは `~/.claude/plugins/`・`~/.codex/plugins/`(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
+| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | lean / luna-shunt の marketplace 追加とインストール | プラグインは `~/.claude/plugins/`・`~/.codex/plugins/`(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
 
 ### Codex だけ扱いが違う理由
 
@@ -288,7 +288,7 @@ CLI のインストールは remote user で走らせている。Claude Code と
 いなくなって失敗する（実測: `curl: (23) Failure writing output to destination`。
 CI で実際に踏んだ）。
 
-## haiku-shunt / luna-shunt / copilot plugin
+## lean / luna-shunt / copilot plugin
 
 `claudeSkills`・`codexSkills`・`copilotSkills` は「入れるか入れないか」の
 一つの switch で、「何を」インストールするかは持たない。中身は
@@ -302,8 +302,8 @@ plugin を**全部**入れる、という意味になる。
 // claude-skills.json
 [
   {
-    "name": "haiku-shunt",
-    "repo": "macha434/haiku-shunt",
+    "name": "lean",
+    "repo": "macha434/lean",
     "marketplace": "macha434-plugins"
   }
 ]
@@ -330,7 +330,7 @@ copilot については(`--json` 非対応のため)`~/.copilot/installed-plugin
 
 **Copilot 向けに新しいプラグインを追加する場合の注意:** Copilot の
 `marketplace.json` は Claude/Codex とスキーマが違う(`owner` がオブジェクト
-必須、`plugins[].source` は相対パスの文字列直書き)。haiku-shunt/luna-shunt
+必須、`plugins[].source` は相対パスの文字列直書き)。lean/luna-shunt
 の `.claude-plugin/marketplace.json` をそのまま流用できないので、
 Copilot 向けの marketplace.json は別途用意すること(実機で検証済み)。
 
