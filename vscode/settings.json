@@ -131,18 +131,7 @@
     "dev.containers.executeInWSL": true,
 
     // ===== Vim: キーマップ =====
-    "vim.insertModeKeyBindings": [
-        {
-            "before": [
-                "j",
-                "j"
-            ],
-            "after": [
-                "<Esc>"
-            ]
-        }
-    ],
-    "vim.normalModeKeyBindings": [
+    "vim.normalModeKeyBindingsNonRecursive": [
         {
             "before": [
                 "J"
@@ -192,9 +181,7 @@
                 "<leader>",
                 "b"
             ]
-        }
-    ],
-    "vim.normalModeKeyBindingsNonRecursive": [
+        },
         {
             "before": [
                 "<space>",
@@ -241,7 +228,18 @@
             ]
         }
     ],
-    "vim.visualModeKeyBindings": [
+    "vim.insertModeKeyBindings": [
+        {
+            "before": [
+                "j",
+                "j"
+            ],
+            "after": [
+                "<Esc>"
+            ]
+        }
+    ],
+    "vim.visualModeKeyBindingsNonRecursive": [
         {
             "before": [
                 "J"
