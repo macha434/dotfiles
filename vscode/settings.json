@@ -142,7 +142,7 @@
             ]
         }
     ],
-    "vim.normalModeKeyBindings": [
+    "vim.normalModeKeyBindingsNonRecursive": [
         {
             "before": [
                 "J"
@@ -192,9 +192,7 @@
                 "<leader>",
                 "b"
             ]
-        }
-    ],
-    "vim.normalModeKeyBindingsNonRecursive": [
+        },
         {
             "before": [
                 "<space>",
@@ -241,7 +239,7 @@
             ]
         }
     ],
-    "vim.visualModeKeyBindings": [
+    "vim.visualModeKeyBindingsNonRecursive": [
         {
             "before": [
                 "J"
