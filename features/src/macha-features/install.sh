@@ -28,9 +28,11 @@ symlink_claude_json
 install_herdr_config
 
 ensure_jq
+ensure_uv
 install_claude_cli
 install_copilot_cli
 install_herdr_cli
+install_graphify_cli
 # Codex はここでは入れない。バイナリが volume 内に入るため、毎起動 runtime/ensure-codex.sh 側で判定する
 setup_path_profile
 
@@ -52,6 +54,7 @@ install -d "$SHARE/lib"
 install -m 644 "$SRC/lib/common.sh"   "$SHARE/lib/common.sh"
 install -m 644 "$SRC/lib/settings.sh" "$SHARE/lib/settings.sh"
 install -m 644 "$SRC/lib/skills.sh"   "$SHARE/lib/skills.sh"
+install -m 644 "$SRC/lib/graphify.sh" "$SHARE/lib/graphify.sh"
 
 # _REMOTE_USER も option もビルド時にしか渡らないので、runtime 用に焼き込む
 {
@@ -63,6 +66,7 @@ install -m 644 "$SRC/lib/skills.sh"   "$SHARE/lib/skills.sh"
     printf 'CODEX=%q\n'          "${CODEX:-false}"
     printf 'COPILOT=%q\n'        "${COPILOT:-false}"
     printf 'HERDR=%q\n'          "${HERDR:-false}"
+    printf 'GRAPHIFY=%q\n'       "${GRAPHIFY:-false}"
     printf 'CLAUDE_SKILLS=%q\n'  "${CLAUDESKILLS:-false}"
     printf 'CODEX_SKILLS=%q\n'   "${CODEXSKILLS:-false}"
     printf 'COPILOT_SKILLS=%q\n' "${COPILOTSKILLS:-false}"

@@ -49,6 +49,22 @@ install_herdr_cli() {
     curl_pipe_install https://herdr.dev/install.sh sh
 }
 
+# graphify (PyPI: graphifyy) が要る uv を入れる。$HOME/.local/bin に入るので volume の外
+ensure_uv() {
+    [ "${GRAPHIFY:-false}" = "true" ] || return 0
+    run_as_user 'command -v uv' >/dev/null 2>&1 && return 0
+    echo "macha-features: uv を入れる"
+    curl_pipe_install https://astral.sh/uv/install.sh sh
+}
+
+# CLI 本体だけをここで入れる。skill の登録 (~/.claude/skills 等、volume の中) は
+# postCreate の ensure-skills.sh 側 (lib/graphify.sh) で行う
+install_graphify_cli() {
+    [ "${GRAPHIFY:-false}" = "true" ] || return 0
+    echo "macha-features: Graphify を入れる"
+    run_as_user 'export PATH="$HOME/.local/bin:$PATH"; uv tool install graphifyy'
+}
+
 # ~/.local/bin を PATH に足す (非ログインシェルでは ~/.profile が読まれないため)
 setup_path_profile() {
     cat > /etc/profile.d/macha-features-path.sh <<'PROFILE'

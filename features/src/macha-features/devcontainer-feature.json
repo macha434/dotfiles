@@ -1,6 +1,6 @@
 {
     "id": "macha-features",
-    "version": "0.10.2",
+    "version": "0.11.0",
     "name": "Persistent agent state volume",
     "description": "Keeps ~/.claude, ~/.codex, ~/.copilot and ~/.config/gh (gh auth login credentials) in a named volume shared across dev containers, and optionally installs the agent CLIs.",
     "documentationURL": "https://github.com/macha434/dotfiles/tree/main/features/src/macha-features",
@@ -24,6 +24,11 @@
             "type": "boolean",
             "default": false,
             "description": "Install herdr"
+        },
+        "graphify": {
+            "type": "boolean",
+            "default": false,
+            "description": "Install the Graphify CLI (graphifyy) and register its skill with the enabled AI CLIs (claude/codex/copilot)"
         },
         "claudeSkills": {
             "type": "boolean",
