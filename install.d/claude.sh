@@ -5,6 +5,8 @@
 
 install_file "$DOTFILES_ROOT/claude/statusline-command.sh" \
              "$HOME/.claude/statusline-command.sh"
+install_file "$DOTFILES_ROOT/claude/agent-status.sh" \
+             "$HOME/.claude/agent-status.sh"
 install_file "$DOTFILES_ROOT/claude/settings.json" \
              "$HOME/.claude/settings.json"
 install_file "$DOTFILES_ROOT/claude/keybindings.json" \

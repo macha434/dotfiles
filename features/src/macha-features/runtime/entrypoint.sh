@@ -27,7 +27,8 @@ fi
 if [ "${CLAUDE:-false}" = "true" ]; then
     apply_json_config "$STATE/claude/settings.json" \
                       "$SHARE/claude-settings.json" \
-                      "$SHARE/claude-statusline.sh" 1
+                      "$SHARE/claude-statusline.sh" 1 \
+                      "$SHARE/claude-agent-status.sh"
     apply_claude_keybindings
 fi
 

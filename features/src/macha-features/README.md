@@ -7,7 +7,7 @@ agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.11": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.12": {
         "claude": true,
         "codex": false,
         "copilot": false,
@@ -24,7 +24,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.11": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.12": { "claude": true }
 }
 ```
 
@@ -220,20 +220,69 @@ settings.json と違ってマージは要らない。`~/.claude/keybindings.json
 ### 表示内容
 
 ```
-NORMAL                                              ← vim モード
-claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort / fast / コンテキスト
-5h 23% (4h00m)   7d 41% (3d00h)   in 8.5k out 1.2k   ← レート制限 / トークン
+NORMAL                                                          ← vim モード
+claude-opus-5 · high · fast off · ctx 8%                        ← モデル ID / effort / fast / コンテキスト
+5h: ████████░░ 76% (4h00m)   7d: ██░░░░░░░░ 21% (3d00h)   in 8.5k out 1.2k
+                                                            ↑ レート制限（残り） / トークン
+webapp:proc   my-custom-name:wait   api:done                    ← 他セッションの状態（居るときだけ）
 ```
 
-レート制限の色は**経過ぶんの線形ペース**との比較で決まる。5 時間窓なら 1 時間あたり 20% が
-等速なので、2 時間経過して 40% を超えていれば赤、30%（0.5 時間ぶん手前）を超えていれば黄色。
-3 時間経過なら赤 60% / 黄 50%。7 日窓も同じ考え方を日単位で適用する。
+レート制限は**残り使用率**（`100 - used_percentage`）を 10 マスのバー（`█`/`░`）と数値で出す。
+減っていく表示にしたいので、使った分ではなく残り分を主役にしている。バーと数値の色は
+**経過ぶんの線形ペース**との比較で決まる（`used_percentage` 側で判定するのは変えていない）。
+5 時間窓なら 1 時間あたり 20% が等速なので、2 時間経過して使用率が 40% を超えていれば赤、
+30%（0.5 時間ぶん手前）を超えていれば黄色。3 時間経過なら赤 60% / 黄 50%。7 日窓も同じ考え方を
+日単位で適用する。
 
 コンテキストは 90% 以上で赤、70% 以上で黄色。存在しないフィールドは `--` になる
 （vim モード無効、effort 非対応モデル、最初の API 応答前など）。
 
 `in`/`out` は `context_window.total_input_tokens`/`total_output_tokens`。**セッション累計ではなく
 現在のコンテキストウィンドウに乗っているトークン数**で、`/compact` や `/clear` で減る・リセットされる。
+
+### 他セッションの状態表示 (agent-status)
+
+同じマシン上で複数の Claude Code セッション（tmux の別ペイン等）を並行して動かしているとき、
+自分以外のセッションが「処理中／入力待ち／完了／エラー」のどれかを、名前つき・色つきで
+4 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
+提案されている実験的な Function Hooks（`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`）は未公開・
+未ドキュメントで API も流動的なため使わず、既存の（ドキュメント化済みの）hooks と
+statusLine だけで組んでいる。
+
+しくみは書き手と読み手に分かれる。
+
+- **書き手** [`claude/agent-status.sh`](../../../claude/agent-status.sh)。`settings.json`
+  の `hooks` から `SessionStart`・`UserPromptSubmit`・`PostToolUse`（失敗時含む）・
+  `Stop`・`StopFailure`・`Notification`・`SessionEnd` にぶら下げてある（全部
+  `async: true` — 状態を書くだけで許可判定などはしないので、ユーザー操作をブロックする
+  理由が無い）。stdin の `hook_event_name`（`Notification` はさらに `notification_type`）
+  を見て `~/.claude/agent-status/<session_id>.json` に 1 セッション 1 ファイルで
+  `{name, cwd, state, updated_at}` を書く。`name` は `session_name`（`--name`/`/rename`
+  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。
+  `state` は `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
+  （`Stop`、または `Notification` の `permission_prompt`/`idle_prompt`/`agent_needs_input`）・
+  `done`（`SessionEnd`）・`error`（`StopFailure`）の 4 種類。
+- **読み手** `claude/statusline-command.sh` の末尾。`~/.claude/agent-status/*.json` を
+  舐めて自分の `session_id` を除外し、`state` ごとに色を振って 1 行にまとめる
+  （processing=シアン、waiting_input=黄色、done=緑、error=赤）。他セッションが 1 つも
+  居なければ行ごと出さない。`updated_at` から 15 分以上更新が無いものは、端末を kill する等で
+  `SessionEnd` が発火せず残ったゴミとみなして読み手側が削除する。`done` はセッション終了が
+  見えた証拠として 60 秒だけ残してから同様に削除する（即消すと「完了した」の一瞬が見えない）。
+
+同一マシン内のセッション同士が `~/.claude/` を共有していることに依存する。Claude Code
+Remote 経由のクラウドセッションは別コンテナで動き、この `~/.claude/` を共有しないため
+**今のところ対象外**（あちらの状態を取るなら制御プレーン API を統合する別実装が要る）。
+
+**devcontainer 版 (`features/`) にも反映済み。** `agent-status.sh` を
+`statusline-command.sh` と同じ扱いにした:`assets.tsv` に追記して
+`features/src/macha-features/claude/agent-status.sh` へ同期し、`install.sh` が
+`$SHARE/claude-agent-status.sh` としてイメージ側に配置する。`claude/settings.json`
+テンプレート側の `hooks.*.*.hooks[].command` はホスト向けの `~/.claude/agent-status.sh`
+を書いているため（`statusLine.command` が `~/.claude/statusline-command.sh` を書いているのと
+同じ理由）、`lib/settings.sh` の `apply_json_config` に 5 番目の引数
+（`$SHARE/claude-agent-status.sh`）を足し、マージ後に `~/.claude/agent-status.sh` を
+指しているコマンドだけ `$SHARE` 側のパスへ jq で書き換えるようにした。Copilot 側の呼び出しは
+5 番目の引数を渡さない（空文字扱い）ので、この書き換えは走らない。
 
 表示を変えたいときは `claude/statusline-command.sh` を編集する。ホスト側は
 `./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**

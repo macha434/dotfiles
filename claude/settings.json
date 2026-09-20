@@ -14,6 +14,32 @@
     "command": "~/.claude/statusline-command.sh",
     "hideVimModeIndicator": true
   },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "PostToolUse": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "PostToolUseFailure": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/agent-status.sh", "async": true } ] }
+    ]
+  },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",

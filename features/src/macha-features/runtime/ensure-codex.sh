@@ -28,7 +28,9 @@ install_codex_binary() {
 
     local installer ok=0
     installer=$(mktemp)
-    if curl -fsSL https://chatgpt.com/codex/install.sh -o "$installer"; then
+    # --retry: 5xx やタイムアウトの一時的な失敗 (実機で 504 を確認済み) を自動で拾い直す
+    if curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors \
+            https://chatgpt.com/codex/install.sh -o "$installer"; then
         if command -v setsid >/dev/null 2>&1; then
             setsid -w sh "$installer" </dev/null && ok=1
         else
