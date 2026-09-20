@@ -223,6 +223,7 @@ settings.json と違ってマージは要らない。`~/.claude/keybindings.json
 NORMAL                                              ← vim モード
 claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort / fast / コンテキスト
 5h 23% (4h00m)   7d 41% (3d00h)   in 8.5k out 1.2k   ← レート制限 / トークン
+webapp:proc   my-custom-name:wait   api:done         ← 他セッションの状態（居るときだけ）
 ```
 
 レート制限の色は**経過ぶんの線形ペース**との比較で決まる。5 時間窓なら 1 時間あたり 20% が
@@ -234,6 +235,49 @@ claude-opus-5 · high · fast off · ctx 8%            ← モデル ID / effort
 
 `in`/`out` は `context_window.total_input_tokens`/`total_output_tokens`。**セッション累計ではなく
 現在のコンテキストウィンドウに乗っているトークン数**で、`/compact` や `/clear` で減る・リセットされる。
+
+### 他セッションの状態表示 (agent-status)
+
+同じマシン上で複数の Claude Code セッション（tmux の別ペイン等）を並行して動かしているとき、
+自分以外のセッションが「処理中／入力待ち／完了／エラー」のどれかを、名前つき・色つきで
+4 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
+提案されている実験的な Function Hooks（`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`）は未公開・
+未ドキュメントで API も流動的なため使わず、既存の（ドキュメント化済みの）hooks と
+statusLine だけで組んでいる。
+
+しくみは書き手と読み手に分かれる。
+
+- **書き手** [`claude/agent-status.sh`](../../../claude/agent-status.sh)。`settings.json`
+  の `hooks` から `SessionStart`・`UserPromptSubmit`・`PostToolUse`（失敗時含む）・
+  `Stop`・`StopFailure`・`Notification`・`SessionEnd` にぶら下げてある（全部
+  `async: true` — 状態を書くだけで許可判定などはしないので、ユーザー操作をブロックする
+  理由が無い）。stdin の `hook_event_name`（`Notification` はさらに `notification_type`）
+  を見て `~/.claude/agent-status/<session_id>.json` に 1 セッション 1 ファイルで
+  `{name, cwd, state, updated_at}` を書く。`name` は `session_name`（`--name`/`/rename`
+  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。
+  `state` は `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
+  （`Stop`、または `Notification` の `permission_prompt`/`idle_prompt`/`agent_needs_input`）・
+  `done`（`SessionEnd`）・`error`（`StopFailure`）の 4 種類。
+- **読み手** `claude/statusline-command.sh` の末尾。`~/.claude/agent-status/*.json` を
+  舐めて自分の `session_id` を除外し、`state` ごとに色を振って 1 行にまとめる
+  （processing=シアン、waiting_input=黄色、done=緑、error=赤）。他セッションが 1 つも
+  居なければ行ごと出さない。`updated_at` から 15 分以上更新が無いものは、端末を kill する等で
+  `SessionEnd` が発火せず残ったゴミとみなして読み手側が削除する。`done` はセッション終了が
+  見えた証拠として 60 秒だけ残してから同様に削除する（即消すと「完了した」の一瞬が見えない）。
+
+同一マシン内のセッション同士が `~/.claude/` を共有していることに依存する。Claude Code
+Remote 経由のクラウドセッションは別コンテナで動き、この `~/.claude/` を共有しないため
+**今のところ対象外**（あちらの状態を取るなら制御プレーン API を統合する別実装が要る）。
+
+**devcontainer 版 (`features/`) には未反映。** `claude/settings.json` は
+`features/assets.tsv` 経由で自動同期されるので `hooks` の定義自体はコンテナにも渡るが、
+`agent-status.sh` 本体は `features/src/macha-features/install.sh` が `$SHARE` に
+配置する対象に入れていない。したがって現状コンテナ内で hook は「スクリプトが無い」で
+毎回非ブロックエラーになる（動作は止まらないが transcript にエラー通知が出る）。
+container 側にも欲しくなったら、`statusline-command.sh` と同じ扱い（`assets.tsv` に
+追記 → `install.sh` に `install -m 755` の 1 行 → `lib/settings.sh` の
+`apply_json_config` を `statusLine` と同様に hooks のコマンドパスも
+`$SHARE/claude-agent-status.sh` へ強制上書きするよう拡張）が要る。
 
 表示を変えたいときは `claude/statusline-command.sh` を編集する。ホスト側は
 `./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**
