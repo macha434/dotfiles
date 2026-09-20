@@ -77,16 +77,32 @@ remaining() {
         }'
 }
 
+bar() {
+    local pct=$1 width=10
+    awk -v p="$pct" -v w="$width" '
+        BEGIN {
+            filled = int(p * w / 100 + 0.5)
+            if (filled > w) filled = w
+            if (filled < 0) filled = 0
+            out = ""
+            for (i = 0; i < filled; i++) out = out "█"
+            for (i = filled; i < w; i++) out = out "░"
+            printf "%s", out
+        }'
+}
+
 window_field() {
     local label=$1 path=$2 window=$3 unit=$4
-    local used reset
+    local used reset remain c
     used=$(q "$path.used_percentage")
     reset=$(q "$path.resets_at")
     if [ -z "$used" ] || [ -z "$reset" ]; then
-        printf '%s' "${D}${label} --${R}"
+        printf '%s' "${D}${label}: --${R}"
         return
     fi
-    printf '%s' "${D}${label}${R} $(pace_color "$used" "$reset" "$window" "$unit")${used%%.*}%${R} ${D}($(remaining "$reset"))${R}"
+    remain=$(awk -v u="$used" 'BEGIN { r = 100 - u; if (r < 0) r = 0; printf "%d", r }')
+    c=$(pace_color "$used" "$reset" "$window" "$unit")
+    printf '%s' "${D}${label}:${R} ${c}$(bar "$remain")${R} ${c}${remain}%${R} ${D}($(remaining "$reset"))${R}"
 }
 
 # total_input/output_tokens はコンテキストウィンドウ内の現在値であり、セッション累計ではない
