@@ -7,11 +7,12 @@ agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.10": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.11": {
         "claude": true,
         "codex": false,
         "copilot": false,
         "herdr": false,
+        "graphify": false,
         "claudeSkills": false,
         "codexSkills": false,
         "copilotSkills": false
@@ -23,7 +24,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.10": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.11": { "claude": true }
 }
 ```
 
@@ -35,6 +36,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 | `codex` | boolean | `false` | Codex CLI を入れる |
 | `copilot` | boolean | `false` | GitHub Copilot CLI を入れ、ステータスラインを当てる |
 | `herdr` | boolean | `false` | herdr を入れ、既定の config.toml を置く |
+| `graphify` | boolean | `false` | [Graphify](https://github.com/Graphify-Labs/graphify)（`graphifyy`）を入れ、有効な `claude`/`codex`/`copilot` にスキルとして登録する |
 | `claudeSkills` | boolean | `false` | [`claude-skills.json`](./claude-skills.json) に載っている Claude Code plugin を全部入れる(`claude` が有効な場合のみ意味を持つ) |
 | `codexSkills` | boolean | `false` | [`codex-skills.json`](./codex-skills.json) に載っている Codex plugin を全部入れる(`codex` が有効な場合のみ意味を持つ) |
 | `copilotSkills` | boolean | `false` | [`copilot-skills.json`](./copilot-skills.json) に載っている Copilot plugin を全部入れる(`copilot` が有効な場合のみ意味を持つ)。今のところカタログは空 |
@@ -49,6 +51,15 @@ CLI を入れるかどうかと設定を当てるかどうかだけ。
 配る方針なので、他の 4 つと違い volume 化していない。`herdr` オプションが決めるのは CLI の
 導入と `~/.config/herdr/config.toml` の配置のみで、コンテナを作り直すとその config.toml は
 リポジトリの既定値に戻る。
+
+**graphify も CLI 本体は herdr と同じく volume の対象外**（`~/.local/` に入るので
+イメージ側に焼ける）。ただし `graphify install --platform <name>` が書き込む先
+（`~/.claude/skills/`・`~/.codex/`・`~/.copilot/` 配下）はどれも volume の中なので、
+CLI 本体とは別のタイミングで扱う。CLI 本体は `install.sh`（ビルド時）で `uv tool install`
+により入れ、スキル登録は volume マウント後の `ensure-skills.sh`（postCreate）で
+`claude`/`codex`/`copilot` のうち有効なものごとに行う。`graphify install` は
+ネットワーク不要のファイル配置のみで、上書きが通常の動作なので、コンテナを作り直す
+たびに再実行しても問題ない。
 
 ## しくみ
 
