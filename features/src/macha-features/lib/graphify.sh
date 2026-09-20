@@ -13,7 +13,15 @@ install_graphify_skill() {
 }
 
 install_graphify_skills() {
-    [ "${CLAUDE:-false}" = "true" ]  && install_graphify_skill claude
-    [ "${CODEX:-false}" = "true" ]   && install_graphify_skill codex
-    [ "${COPILOT:-false}" = "true" ] && install_graphify_skill copilot
+    # set -eu 下では "[ cond ] && cmd" は cond が偽のとき非ゼロで終わり、
+    # if を挟まない単独の文だとそこでスクリプトごと落ちる
+    if [ "${CLAUDE:-false}" = "true" ]; then
+        install_graphify_skill claude
+    fi
+    if [ "${CODEX:-false}" = "true" ]; then
+        install_graphify_skill codex
+    fi
+    if [ "${COPILOT:-false}" = "true" ]; then
+        install_graphify_skill copilot
+    fi
 }
