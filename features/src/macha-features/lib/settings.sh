@@ -4,8 +4,11 @@
 #   $2 $SHARE のテンプレート
 #   $3 $SHARE の statusline スクリプト
 #   $4 refreshInterval の秒数 (空なら付けない)
+#   $5 $SHARE の agent-status スクリプト (省略可。テンプレートの hooks.*.*.hooks[].command が
+#      ホスト向けパス ("~/.claude/agent-status.sh") を指しているところをこれに書き換える。
+#      statusLine と同じ理由 — テンプレートはホスト・コンテナ両方で使い回すため)
 apply_json_config() {
-    local dest=$1 template=$2 script=$3 refresh=$4
+    local dest=$1 template=$2 script=$3 refresh=$4 agent_script=${5:-}
     [ -f "$template" ] || return 0
     [ -x "$script" ] || return 0
 
@@ -25,7 +28,18 @@ apply_json_config() {
         [ -s "$dest" ] || echo '{}' > "$dest"
         local tmp
         tmp=$(mktemp)
-        if jq -s --argjson sl "$sl" '.[0] * .[1] | .statusLine = $sl' \
+        if jq -s --argjson sl "$sl" --arg host_hook '~/.claude/agent-status.sh' \
+                  --arg ascript "$agent_script" '
+                .[0] * .[1]
+                | .statusLine = $sl
+                | if $ascript != "" then
+                    .hooks |= (
+                        (. // {})
+                        | with_entries(.value |= map(.hooks |= map(
+                            if .command == $host_hook then .command = $ascript else . end
+                          )))
+                    )
+                  else . end' \
              "$dest" "$template" > "$tmp" 2>/dev/null; then
             mv "$tmp" "$dest"
         else

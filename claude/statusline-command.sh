@@ -153,4 +153,6 @@ if [ -d "$agent_dir" ]; then
         line4="${line4}${line4:+   }${c}${B}${aname}${R}${D}:${label}${R}"
     done
 fi
-[ -n "$line4" ] && printf '%s\n' "$line4"
+if [ -n "$line4" ]; then
+    printf '%s\n' "$line4"
+fi

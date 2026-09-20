@@ -7,7 +7,7 @@ agent の CLI 導入とステータスラインの適用も行う。
 
 ```jsonc
 "features": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.11": {
+    "ghcr.io/macha434/dotfiles/macha-features:0.12": {
         "claude": true,
         "codex": false,
         "copilot": false,
@@ -24,7 +24,7 @@ VS Code のユーザー設定に書けば、以後このマシンで作るすべ
 
 ```jsonc
 "dev.containers.defaultFeatures": {
-    "ghcr.io/macha434/dotfiles/macha-features:0.11": { "claude": true }
+    "ghcr.io/macha434/dotfiles/macha-features:0.12": { "claude": true }
 }
 ```
 
@@ -273,15 +273,16 @@ statusLine だけで組んでいる。
 Remote 経由のクラウドセッションは別コンテナで動き、この `~/.claude/` を共有しないため
 **今のところ対象外**（あちらの状態を取るなら制御プレーン API を統合する別実装が要る）。
 
-**devcontainer 版 (`features/`) には未反映。** `claude/settings.json` は
-`features/assets.tsv` 経由で自動同期されるので `hooks` の定義自体はコンテナにも渡るが、
-`agent-status.sh` 本体は `features/src/macha-features/install.sh` が `$SHARE` に
-配置する対象に入れていない。したがって現状コンテナ内で hook は「スクリプトが無い」で
-毎回非ブロックエラーになる（動作は止まらないが transcript にエラー通知が出る）。
-container 側にも欲しくなったら、`statusline-command.sh` と同じ扱い（`assets.tsv` に
-追記 → `install.sh` に `install -m 755` の 1 行 → `lib/settings.sh` の
-`apply_json_config` を `statusLine` と同様に hooks のコマンドパスも
-`$SHARE/claude-agent-status.sh` へ強制上書きするよう拡張）が要る。
+**devcontainer 版 (`features/`) にも反映済み。** `agent-status.sh` を
+`statusline-command.sh` と同じ扱いにした:`assets.tsv` に追記して
+`features/src/macha-features/claude/agent-status.sh` へ同期し、`install.sh` が
+`$SHARE/claude-agent-status.sh` としてイメージ側に配置する。`claude/settings.json`
+テンプレート側の `hooks.*.*.hooks[].command` はホスト向けの `~/.claude/agent-status.sh`
+を書いているため（`statusLine.command` が `~/.claude/statusline-command.sh` を書いているのと
+同じ理由）、`lib/settings.sh` の `apply_json_config` に 5 番目の引数
+（`$SHARE/claude-agent-status.sh`）を足し、マージ後に `~/.claude/agent-status.sh` を
+指しているコマンドだけ `$SHARE` 側のパスへ jq で書き換えるようにした。Copilot 側の呼び出しは
+5 番目の引数を渡さない（空文字扱い）ので、この書き換えは走らない。
 
 表示を変えたいときは `claude/statusline-command.sh` を編集する。ホスト側は
 `./install.sh claude` で即反映される。**コンテナ側に反映するには `version` を上げること。**

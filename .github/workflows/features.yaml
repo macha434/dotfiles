@@ -8,6 +8,7 @@ on:
       - '.github/workflows/features.yaml'
       # features/assets.tsv の複製元。ここが変わったら feature も作り直す
       - 'claude/statusline-command.sh'
+      - 'claude/agent-status.sh'
       - 'claude/settings.json'
       - 'claude/keybindings.json'
       - 'codex/config.toml'
@@ -20,6 +21,7 @@ on:
       - 'features/**'
       - '.github/workflows/features.yaml'
       - 'claude/statusline-command.sh'
+      - 'claude/agent-status.sh'
       - 'claude/settings.json'
       - 'claude/keybindings.json'
       - 'codex/config.toml'

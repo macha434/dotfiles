@@ -3,6 +3,7 @@
 #
 # <source>                      <destination>
 claude/statusline-command.sh    features/src/macha-features/claude/statusline-command.sh
+claude/agent-status.sh          features/src/macha-features/claude/agent-status.sh
 claude/settings.json            features/src/macha-features/claude/settings.json
 claude/keybindings.json         features/src/macha-features/claude/keybindings.json
 codex/config.toml               features/src/macha-features/codex/config.toml
