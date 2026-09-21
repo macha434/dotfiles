@@ -128,6 +128,21 @@ self=$(q '.session_id')
 now=$(date +%s)
 line4=""
 agent_dir="$HOME/.claude/agent-status"
+
+# session_name (手動 /rename か AI 生成タイトル) は statusLine の JSON にしか
+# 来ない(hooks 側では取れない)ので、自分の agent-status ファイルへの反映はここで行う。
+# name_rank 3 として書き、hooks 側(cwd=1 / 冒頭メッセージ=2)に上書きされないようにする。
+self_name=$(q '.session_name')
+self_file="$agent_dir/$self.json"
+if [ -n "$self_name" ] && [ -f "$self_file" ]; then
+    self_rank=$(jq -r '.name_rank // 0' "$self_file" 2>/dev/null)
+    if [ "${self_rank:-0}" -lt 3 ]; then
+        tmp="$self_file.tmp.$$"
+        jq --arg n "$self_name" '.name = $n | .name_rank = 3' "$self_file" > "$tmp" 2>/dev/null \
+            && mv "$tmp" "$self_file"
+    fi
+fi
+
 if [ -d "$agent_dir" ]; then
     for f in "$agent_dir"/*.json; do
         [ -e "$f" ] || continue

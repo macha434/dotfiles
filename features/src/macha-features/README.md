@@ -257,14 +257,33 @@ statusLine だけで組んでいる。
   `async: true` — 状態を書くだけで許可判定などはしないので、ユーザー操作をブロックする
   理由が無い）。stdin の `hook_event_name`（`Notification` はさらに `notification_type`）
   を見て `~/.claude/agent-status/<session_id>.json` に 1 セッション 1 ファイルで
-  `{name, cwd, state, updated_at}` を書く。`name` は `session_name`（`--name`/`/rename`
-  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。ただし
-  `cwd` が `.claude/worktrees/<name>` の場合は worktree 名だけだとどのリポジトリか
-  分からないため、`リポジトリ名/worktree名`（例: `dotfiles/my-worktree`）にする。
-  `state` は `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
+  `{name, name_rank, cwd, state, updated_at}` を書く。`state` は
+  `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
   （`Stop`、または `Notification` の `permission_prompt`/`idle_prompt`/`agent_needs_input`）・
   `done`（`SessionEnd`）・`error`（`StopFailure`）の 4 種類。
-- **読み手** `claude/statusline-command.sh` の末尾。`~/.claude/agent-status/*.json` を
+
+  `name` は 3 段階の優先度（`name_rank`）で決め、hook が呼ばれるたびに低い rank へ
+  後退させることはしない（既存ファイルの rank 以上でしか上書きしない）:
+  1. **rank 1: `cwd` ベース。** `.claude/worktrees/<name>` 配下なら worktree 名だけだと
+     どのリポジトリか分からないため `リポジトリ名/worktree名`（例: `dotfiles/my-worktree`）、
+     それ以外は `cwd` の basename。ファイルがまだ無いとき(`SessionStart` 直後)の初期値。
+  2. **rank 2: 最初の指示文の冒頭。** `transcript_path` の `.jsonl` から最初のユーザー
+     発言（サブエージェントの会話は除く）を読んで先頭 24 文字を使う。`UserPromptSubmit`
+     の時点で transcript に記録されているので、これ以降の hook で rank 1 から上がる。
+  3. **rank 3: `session_name`（`--name`/`/rename` や AI 生成タイトル）。** hooks の JSON
+     には来ない（statusLine の JSON にしか無い）フィールドなので、`agent-status.sh` では
+     設定できない。`claude/statusline-command.sh` 側が自分の `session_name` を検知した
+     ときに rank 3 として書き込む。
+
+  rank を分けている理由は、`Stop`/`SessionEnd` のたびに `name` を作り直すと、途中で
+  ついたタイトルが消えて `cwd` 表示に戻ってしまう（`done` になった瞬間に限って
+  タイトルが消える、という分かりづらい挙動になる）ため。AI 生成タイトルは日本語で
+  指示しても英語 3〜5 単語程度になる傾向があり、日本語のまま出したい場合は rank 2
+  （最初の指示文の冒頭）のほうが有効なことが多い。
+- **読み手** `claude/statusline-command.sh` の末尾。まず自分自身の `session_name` が
+  取れていれば、自分の `~/.claude/agent-status/<自分の session_id>.json` を rank 3
+  として上書きする（前述の通り hooks からは書けない情報のため、ここでしか書けない）。
+  そのうえで `~/.claude/agent-status/*.json` を
   舐めて自分の `session_id` を除外し、`state` ごとに色つきの記号（`●`/`◐`/`✓`/`✗`）を
   `name` の前に振って 1 行にまとめる（processing=シアン `●`、waiting_input=黄色 `◐`、
   done=緑 `✓`、error=赤 `✗`）。色と記号を両方変えているのは色だけだと色覚特性によっては
