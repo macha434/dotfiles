@@ -649,7 +649,7 @@
     {
         // 自作キーバインドのチートシート。キーボードショートカットエディタを
         // Source: User で絞り込んだ状態で開く (このファイルの定義がそのまま一覧化される)。
-        "key": "ctrl+a ?",
+        "key": "ctrl+a shift+/",
         "command": "workbench.action.openGlobalKeybindings",
         "args": "@source:user"
     }
