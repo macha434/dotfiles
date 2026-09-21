@@ -4,6 +4,34 @@
 自作バインドを手動でまとめたもの。バインドを変更したらこのファイルも
 一緒に更新すること（自動生成ではない）。
 
+## Vim (VSCodeVim) キーマップ
+
+Normal / Visual モード:
+
+| キー | 動作 |
+| --- | --- |
+| `J` | `<leader><leader>j` を発火 |
+| `K` | `<leader><leader>k` を発火 |
+| `W` | `<leader><leader>w` を発火 |
+| `E` | `<leader><leader>e` を発火 |
+| `B` | `<leader><leader>b` を発火 |
+
+Normal モードのみ:
+
+| キー | 動作 |
+| --- | --- |
+| `<space>r` | シンボルのリネーム |
+| `<space>d` | 定義へジャンプ |
+| `<space>t` | 型定義へジャンプ |
+| `<space>h` | ホバー表示 |
+| `<space>a` | Code Runner 実行 |
+
+Insert モード:
+
+| キー | 動作 |
+| --- | --- |
+| `jj` | `<Esc>` |
+
 ## プレフィックス早見表
 
 | プレフィックス | 用途 |
@@ -128,31 +156,3 @@
 | `ctrl+a ctrl+a` | 全選択 (`ctrl+a` はプレフィックス化したため2打鍵) |
 | `ctrl+l` | 副サイドバー (Claude など) のトグル |
 | `ctrl+a shift+/` | このチートシートを表示 |
-
-## Vim (VSCodeVim) キーマップ
-
-Normal / Visual モード:
-
-| キー | 動作 |
-| --- | --- |
-| `J` | `<leader><leader>j` を発火 |
-| `K` | `<leader><leader>k` を発火 |
-| `W` | `<leader><leader>w` を発火 |
-| `E` | `<leader><leader>e` を発火 |
-| `B` | `<leader><leader>b` を発火 |
-
-Normal モードのみ:
-
-| キー | 動作 |
-| --- | --- |
-| `<space>r` | シンボルのリネーム |
-| `<space>d` | 定義へジャンプ |
-| `<space>t` | 型定義へジャンプ |
-| `<space>h` | ホバー表示 |
-| `<space>a` | Code Runner 実行 |
-
-Insert モード:
-
-| キー | 動作 |
-| --- | --- |
-| `jj` | `<Esc>` |
