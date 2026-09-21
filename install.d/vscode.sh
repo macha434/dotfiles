@@ -25,4 +25,5 @@ while IFS= read -r dir; do
     [ -n "$dir" ] || continue
     install_file "$DOTFILES_ROOT/vscode/settings.json"    "$dir/settings.json"
     install_file "$DOTFILES_ROOT/vscode/keybindings.json" "$dir/keybindings.json"
+    install_file "$DOTFILES_ROOT/vscode/CHEATSHEET.md"    "$dir/CHEATSHEET.md"
 done < <(vscode_user_dirs)

@@ -647,10 +647,17 @@
         "command": "-editor.action.toggleTabFocusMode"
     },
     {
-        // 自作キーバインドのチートシート。キーボードショートカットエディタを
-        // Source: User で絞り込んだ状態で開く (このファイルの定義がそのまま一覧化される)。
+        // 自作キーバインドのチートシート (vscode/CHEATSHEET.md) を Markdown
+        // プレビューで表示する。vscode-userdata: は install.d/vscode.sh が
+        // settings.json 等と一緒にコピーする User ディレクトリを指す特殊スキームで、
+        // OS ごとに異なる絶対パスに依存しない。
         "key": "ctrl+a shift+/",
-        "command": "workbench.action.openGlobalKeybindings",
-        "args": "@source:user"
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                { "command": "vscode.open", "args": ["vscode-userdata:/User/CHEATSHEET.md"] },
+                "markdown.showPreview"
+            ]
+        }
     }
 ]
