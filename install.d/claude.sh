@@ -11,6 +11,8 @@ install_file "$DOTFILES_ROOT/claude/settings.json" \
              "$HOME/.claude/settings.json"
 install_file "$DOTFILES_ROOT/claude/keybindings.json" \
              "$HOME/.claude/keybindings.json"
+install_file "$DOTFILES_ROOT/claude/agents/vscode-keybind.md" \
+             "$HOME/.claude/agents/vscode-keybind.md"
 
 if [ "${DRY_RUN:-0}" != 1 ] && ! command -v jq >/dev/null 2>&1; then
     warn "jq が無い。ステータスラインは値が入らずプレースホルダーのままになる"
