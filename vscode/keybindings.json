@@ -645,5 +645,12 @@
         // 意図的に使わない機能なので、誤爆で入るキーバインド自体を消しておく。
         "key": "ctrl+m",
         "command": "-editor.action.toggleTabFocusMode"
+    },
+    {
+        // 自作キーバインドのチートシート。キーボードショートカットエディタを
+        // Source: User で絞り込んだ状態で開く (このファイルの定義がそのまま一覧化される)。
+        "key": "ctrl+a ?",
+        "command": "workbench.action.openGlobalKeybindings",
+        "args": "@source:user"
     }
 ]
