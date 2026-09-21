@@ -648,14 +648,15 @@
     },
     {
         // 自作キーバインドのチートシート (vscode/CHEATSHEET.md) を Markdown
-        // プレビューで表示する。vscode-userdata: は install.d/vscode.sh が
-        // settings.json 等と一緒にコピーする User ディレクトリを指す特殊スキームで、
-        // OS ごとに異なる絶対パスに依存しない。
+        // プレビューで表示する。__DOTFILES_CHEATSHEET_URI__ は install.d/vscode.sh
+        // が配置時に実際の絶対パス (file://...) へ置換するプレースホルダ。
+        // vscode-userdata: スキームは settings.json 等の既知ファイル以外では
+        // "file not found" になることがある (特に Remote-WSL) ため使わない。
         "key": "ctrl+a shift+/",
         "command": "runCommands",
         "args": {
             "commands": [
-                { "command": "vscode.open", "args": ["vscode-userdata:/User/CHEATSHEET.md"] },
+                { "command": "vscode.open", "args": ["__DOTFILES_CHEATSHEET_URI__"] },
                 "markdown.showPreview"
             ]
         }
