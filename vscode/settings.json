@@ -100,7 +100,9 @@
 
     // ===== Git / ソース管理 =====
     "git.autofetch": true,
-    "git.confirmSync": true,
+    // pull/push (Sync) はダイアログ無しで実行する。force push は別設定
+    // (git.confirmForcePush) で確認を残しているので、誤操作のリスクは低い。
+    "git.confirmSync": false,
     "git.confirmForcePush": true,
     "git.suggestSmartCommit": false,
     "git.ignoreRebaseWarning": true,
