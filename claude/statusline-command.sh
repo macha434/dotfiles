@@ -144,13 +144,13 @@ if [ -d "$agent_dir" ]; then
         state=$(jq -r '.state // empty' "$f" 2>/dev/null)
         aname=$(jq -r '.name // "?"' "$f" 2>/dev/null)
         case "$state" in
-            processing)    c=$CYN; label=proc ;;
-            waiting_input) c=$YEL; label=wait ;;
-            done)          c=$GRN; label=done ;;
-            error)         c=$RED; label=err  ;;
+            processing)    c=$CYN; icon="●" ;;
+            waiting_input) c=$YEL; icon="◐" ;;
+            done)          c=$GRN; icon="✓" ;;
+            error)         c=$RED; icon="✗" ;;
             *)             continue ;;
         esac
-        line4="${line4}${line4:+   }${c}${B}${aname}${R}${D}:${label}${R}"
+        line4="${line4}${line4:+   }${c}${icon}${R} ${aname}"
     done
 fi
 if [ -n "$line4" ]; then

@@ -224,7 +224,7 @@ NORMAL                                                          ← vim モー�
 claude-opus-5 · high · fast off · ctx 8%                        ← モデル ID / effort / fast / コンテキスト
 5h: ████████░░ 76% (4h00m)   7d: ██░░░░░░░░ 21% (3d00h)   in 8.5k out 1.2k
                                                             ↑ レート制限（残り） / トークン
-webapp:proc   my-custom-name:wait   api:done                    ← 他セッションの状態（居るときだけ）
+● webapp   ◐ dotfiles/my-worktree   ✓ api                       ← 他セッションの状態（居るときだけ）
 ```
 
 レート制限は**残り使用率**（`100 - used_percentage`）を 10 マスのバー（`█`/`░`）と数値で出す。
@@ -258,14 +258,18 @@ statusLine だけで組んでいる。
   理由が無い）。stdin の `hook_event_name`（`Notification` はさらに `notification_type`）
   を見て `~/.claude/agent-status/<session_id>.json` に 1 セッション 1 ファイルで
   `{name, cwd, state, updated_at}` を書く。`name` は `session_name`（`--name`/`/rename`
-  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。
+  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。ただし
+  `cwd` が `.claude/worktrees/<name>` の場合は worktree 名だけだとどのリポジトリか
+  分からないため、`リポジトリ名/worktree名`（例: `dotfiles/my-worktree`）にする。
   `state` は `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
   （`Stop`、または `Notification` の `permission_prompt`/`idle_prompt`/`agent_needs_input`）・
   `done`（`SessionEnd`）・`error`（`StopFailure`）の 4 種類。
 - **読み手** `claude/statusline-command.sh` の末尾。`~/.claude/agent-status/*.json` を
-  舐めて自分の `session_id` を除外し、`state` ごとに色を振って 1 行にまとめる
-  （processing=シアン、waiting_input=黄色、done=緑、error=赤）。他セッションが 1 つも
-  居なければ行ごと出さない。`updated_at` から 15 分以上更新が無いものは、端末を kill する等で
+  舐めて自分の `session_id` を除外し、`state` ごとに色つきの記号（`●`/`◐`/`✓`/`✗`）を
+  `name` の前に振って 1 行にまとめる（processing=シアン `●`、waiting_input=黄色 `◐`、
+  done=緑 `✓`、error=赤 `✗`）。色と記号を両方変えているのは色だけだと色覚特性によっては
+  区別しづらいため。他セッションが 1 つも居なければ行ごと出さない。
+  `updated_at` から 15 分以上更新が無いものは、端末を kill する等で
   `SessionEnd` が発火せず残ったゴミとみなして読み手側が削除する。`done` はセッション終了が
   見えた証拠として 60 秒だけ残してから同様に削除する（即消すと「完了した」の一瞬が見えない）。
 

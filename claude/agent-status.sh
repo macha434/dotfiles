@@ -16,7 +16,16 @@ session_id=$(q '.session_id')
 event=$(q '.hook_event_name')
 cwd=$(q '.cwd')
 name=$(q '.session_name')
-[ -n "$name" ] || name=$(basename "${cwd:-unknown}")
+if [ -z "$name" ]; then
+    case "$cwd" in
+        */.claude/worktrees/*)
+            name="$(basename "${cwd%/.claude/worktrees/*}")/$(basename "$cwd")"
+            ;;
+        *)
+            name=$(basename "${cwd:-unknown}")
+            ;;
+    esac
+fi
 file="$dir/$session_id.json"
 
 write() {
