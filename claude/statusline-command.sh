@@ -12,11 +12,11 @@ BLU=$'\033[34m'; MAG=$'\033[35m'; CYN=$'\033[36m'
 
 vim=$(q '.vim.mode')
 case "$vim" in
-    NORMAL)        printf '%s\n' "${GRN}${B}NORMAL${R}" ;;
-    INSERT)        printf '%s\n' "${CYN}${B}INSERT${R}" ;;
-    VISUAL*)       printf '%s\n' "${MAG}${B}${vim}${R}" ;;
-    "")            printf '%s\n' "${D}(vim off)${R}" ;;
-    *)             printf '%s\n' "${B}${vim}${R}" ;;
+    NORMAL)        vim_str="${GRN}${B}NORMAL${R}" ;;
+    INSERT)        vim_str="${CYN}${B}INSERT${R}" ;;
+    VISUAL*)       vim_str="${MAG}${B}${vim}${R}" ;;
+    "")            vim_str="${D}(vim off)${R}" ;;
+    *)             vim_str="${B}${vim}${R}" ;;
 esac
 
 model=$(q '.model.id')
@@ -24,7 +24,7 @@ effort=$(q '.effort.level')
 fast=$(q '.fast_mode')
 pct=$(q '.context_window.used_percentage')
 
-line2="${BLU}${model:-?}${R}"
+line2="${vim_str} ${D}·${R} ${BLU}${model:-?}${R}"
 
 if [ -n "$effort" ]; then
     case "$effort" in

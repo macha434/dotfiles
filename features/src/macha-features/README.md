@@ -220,8 +220,7 @@ settings.json と違ってマージは要らない。`~/.claude/keybindings.json
 ### 表示内容
 
 ```
-NORMAL                                                          ← vim モード
-claude-opus-5 · high · fast off · ctx 8%                        ← モデル ID / effort / fast / コンテキスト
+NORMAL · claude-opus-5 · high · fast off · ctx 8%               ← vim モード / モデル ID / effort / fast / コンテキスト
 5h: ████████░░ 76% (4h00m)   7d: ██░░░░░░░░ 21% (3d00h)   in 8.5k out 1.2k
                                                             ↑ レート制限（残り） / トークン
 ● webapp   ◐ dotfiles/my-worktree   ✓ api                       ← 他セッションの状態（居るときだけ）
@@ -244,7 +243,7 @@ claude-opus-5 · high · fast off · ctx 8%                        ← モデル
 
 同じマシン上で複数の Claude Code セッション（tmux の別ペイン等）を並行して動かしているとき、
 自分以外のセッションが「処理中／入力待ち／完了／エラー」のどれかを、名前つき・色つきで
-4 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
+3 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
 提案されている実験的な Function Hooks（`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`）は未公開・
 未ドキュメントで API も流動的なため使わず、既存の（ドキュメント化済みの）hooks と
 statusLine だけで組んでいる。
@@ -324,15 +323,14 @@ claude-sonnet-5 · allow-all off · ctx 42%    ← モデル ID / パーミッ�
 ai 1.25   premium 7                          ← 消費
 ```
 
-Claude 版が 3 行なのに対し 2 行なのは、対応するフィールドが JSON に無いため。
+Claude 版も他セッション表示（居るときだけの動的な行）を除けば 2 行なので、行数自体は揃っている。
 
 | Claude 版 | Copilot 版 |
 | --- | --- |
-| 1 行目 vim モード | **無し。** `vim.mode` に相当するものが渡らない（`editorMode: "vim"` 自体は効く） |
-| 2 行目 モデル / effort / fast / ctx | モデル / **allow-all** / ctx。effort と fast mode は渡らないので、代わりに `allow_all_enabled`（全許可モードかどうか）を出している |
-| 3 行目 レート制限 5h / 7d | 消費（AI クレジットと premium リクエスト）。窓ごとの上限も reset 時刻も渡らないため、ペース比較も色分けもできず値をそのまま出す |
+| 1 行目 vim モード / モデル / effort / fast / ctx | モデル / **allow-all** / ctx。`vim.mode` に相当するものは渡らず（`editorMode: "vim"` 自体は効く）、effort と fast mode も渡らないので、代わりに `allow_all_enabled`（全許可モードかどうか）を出している |
+| 2 行目 レート制限 5h / 7d | 消費（AI クレジットと premium リクエスト）。窓ごとの上限も reset 時刻も渡らないため、ペース比較も色分けもできず値をそのまま出す |
 
-`refreshInterval` を付けていないのはこの 3 行目のため。Claude 側はレート制限の残り時間を
+`refreshInterval` を付けていないのはこの 2 行目のため。Claude 側はレート制限の残り時間を
 進める必要があるが、Copilot 側にはそういう放っておくと古くなる表示が無いので、イベント駆動の
 ままでよい。コンテキスト率の色（90% 以上で赤、70% 以上で黄色）は Claude 版と揃えている。
 
