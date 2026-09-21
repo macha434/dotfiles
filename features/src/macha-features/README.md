@@ -220,11 +220,10 @@ settings.json と違ってマージは要らない。`~/.claude/keybindings.json
 ### 表示内容
 
 ```
-NORMAL                                                          ← vim モード
-claude-opus-5 · high · fast off · ctx 8%                        ← モデル ID / effort / fast / コンテキスト
+NORMAL · claude-opus-5 · high · fast off · ctx 8%               ← vim モード / モデル ID / effort / fast / コンテキスト
 5h: ████████░░ 76% (4h00m)   7d: ██░░░░░░░░ 21% (3d00h)   in 8.5k out 1.2k
                                                             ↑ レート制限（残り） / トークン
-webapp:proc   my-custom-name:wait   api:done                    ← 他セッションの状態（居るときだけ）
+● webapp   ◐ dotfiles/my-worktree   ✓ api                       ← 他セッションの状態（居るときだけ）
 ```
 
 レート制限は**残り使用率**（`100 - used_percentage`）を 10 マスのバー（`█`/`░`）と数値で出す。
@@ -244,7 +243,7 @@ webapp:proc   my-custom-name:wait   api:done                    ← 他セッシ
 
 同じマシン上で複数の Claude Code セッション（tmux の別ペイン等）を並行して動かしているとき、
 自分以外のセッションが「処理中／入力待ち／完了／エラー」のどれかを、名前つき・色つきで
-4 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
+3 行目に出す。[issue #91870](https://github.com/anthropics/claude-code/issues/91870) で
 提案されている実験的な Function Hooks（`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`）は未公開・
 未ドキュメントで API も流動的なため使わず、既存の（ドキュメント化済みの）hooks と
 statusLine だけで組んでいる。
@@ -257,15 +256,38 @@ statusLine だけで組んでいる。
   `async: true` — 状態を書くだけで許可判定などはしないので、ユーザー操作をブロックする
   理由が無い）。stdin の `hook_event_name`（`Notification` はさらに `notification_type`）
   を見て `~/.claude/agent-status/<session_id>.json` に 1 セッション 1 ファイルで
-  `{name, cwd, state, updated_at}` を書く。`name` は `session_name`（`--name`/`/rename`
-  や AI 生成タイトルがあるときだけ載る）が無ければ `cwd` の basename。
-  `state` は `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
+  `{name, name_rank, cwd, state, updated_at}` を書く。`state` は
+  `processing`（`UserPromptSubmit`/`PostToolUse`）・`waiting_input`
   （`Stop`、または `Notification` の `permission_prompt`/`idle_prompt`/`agent_needs_input`）・
   `done`（`SessionEnd`）・`error`（`StopFailure`）の 4 種類。
-- **読み手** `claude/statusline-command.sh` の末尾。`~/.claude/agent-status/*.json` を
-  舐めて自分の `session_id` を除外し、`state` ごとに色を振って 1 行にまとめる
-  （processing=シアン、waiting_input=黄色、done=緑、error=赤）。他セッションが 1 つも
-  居なければ行ごと出さない。`updated_at` から 15 分以上更新が無いものは、端末を kill する等で
+
+  `name` は 3 段階の優先度（`name_rank`）で決め、hook が呼ばれるたびに低い rank へ
+  後退させることはしない（既存ファイルの rank 以上でしか上書きしない）:
+  1. **rank 1: `cwd` ベース。** `.claude/worktrees/<name>` 配下なら worktree 名だけだと
+     どのリポジトリか分からないため `リポジトリ名/worktree名`（例: `dotfiles/my-worktree`）、
+     それ以外は `cwd` の basename。ファイルがまだ無いとき(`SessionStart` 直後)の初期値。
+  2. **rank 2: 最初の指示文の冒頭。** `transcript_path` の `.jsonl` から最初のユーザー
+     発言（サブエージェントの会話は除く）を読んで先頭 24 文字を使う。`UserPromptSubmit`
+     の時点で transcript に記録されているので、これ以降の hook で rank 1 から上がる。
+  3. **rank 3: `session_name`（`--name`/`/rename` や AI 生成タイトル）。** hooks の JSON
+     には来ない（statusLine の JSON にしか無い）フィールドなので、`agent-status.sh` では
+     設定できない。`claude/statusline-command.sh` 側が自分の `session_name` を検知した
+     ときに rank 3 として書き込む。
+
+  rank を分けている理由は、`Stop`/`SessionEnd` のたびに `name` を作り直すと、途中で
+  ついたタイトルが消えて `cwd` 表示に戻ってしまう（`done` になった瞬間に限って
+  タイトルが消える、という分かりづらい挙動になる）ため。AI 生成タイトルは日本語で
+  指示しても英語 3〜5 単語程度になる傾向があり、日本語のまま出したい場合は rank 2
+  （最初の指示文の冒頭）のほうが有効なことが多い。
+- **読み手** `claude/statusline-command.sh` の末尾。まず自分自身の `session_name` が
+  取れていれば、自分の `~/.claude/agent-status/<自分の session_id>.json` を rank 3
+  として上書きする（前述の通り hooks からは書けない情報のため、ここでしか書けない）。
+  そのうえで `~/.claude/agent-status/*.json` を
+  舐めて自分の `session_id` を除外し、`state` ごとに色つきの記号（`●`/`◐`/`✓`/`✗`）を
+  `name` の前に振って 1 行にまとめる（processing=シアン `●`、waiting_input=黄色 `◐`、
+  done=緑 `✓`、error=赤 `✗`）。色と記号を両方変えているのは色だけだと色覚特性によっては
+  区別しづらいため。他セッションが 1 つも居なければ行ごと出さない。
+  `updated_at` から 15 分以上更新が無いものは、端末を kill する等で
   `SessionEnd` が発火せず残ったゴミとみなして読み手側が削除する。`done` はセッション終了が
   見えた証拠として 60 秒だけ残してから同様に削除する（即消すと「完了した」の一瞬が見えない）。
 
@@ -301,15 +323,14 @@ claude-sonnet-5 · allow-all off · ctx 42%    ← モデル ID / パーミッ�
 ai 1.25   premium 7                          ← 消費
 ```
 
-Claude 版が 3 行なのに対し 2 行なのは、対応するフィールドが JSON に無いため。
+Claude 版も他セッション表示（居るときだけの動的な行）を除けば 2 行なので、行数自体は揃っている。
 
 | Claude 版 | Copilot 版 |
 | --- | --- |
-| 1 行目 vim モード | **無し。** `vim.mode` に相当するものが渡らない（`editorMode: "vim"` 自体は効く） |
-| 2 行目 モデル / effort / fast / ctx | モデル / **allow-all** / ctx。effort と fast mode は渡らないので、代わりに `allow_all_enabled`（全許可モードかどうか）を出している |
-| 3 行目 レート制限 5h / 7d | 消費（AI クレジットと premium リクエスト）。窓ごとの上限も reset 時刻も渡らないため、ペース比較も色分けもできず値をそのまま出す |
+| 1 行目 vim モード / モデル / effort / fast / ctx | モデル / **allow-all** / ctx。`vim.mode` に相当するものは渡らず（`editorMode: "vim"` 自体は効く）、effort と fast mode も渡らないので、代わりに `allow_all_enabled`（全許可モードかどうか）を出している |
+| 2 行目 レート制限 5h / 7d | 消費（AI クレジットと premium リクエスト）。窓ごとの上限も reset 時刻も渡らないため、ペース比較も色分けもできず値をそのまま出す |
 
-`refreshInterval` を付けていないのはこの 3 行目のため。Claude 側はレート制限の残り時間を
+`refreshInterval` を付けていないのはこの 2 行目のため。Claude 側はレート制限の残り時間を
 進める必要があるが、Copilot 側にはそういう放っておくと古くなる表示が無いので、イベント駆動の
 ままでよい。コンテキスト率の色（90% 以上で赤、70% 以上で黄色）は Claude 版と揃えている。
 

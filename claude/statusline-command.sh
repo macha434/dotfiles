@@ -12,11 +12,11 @@ BLU=$'\033[34m'; MAG=$'\033[35m'; CYN=$'\033[36m'
 
 vim=$(q '.vim.mode')
 case "$vim" in
-    NORMAL)        printf '%s\n' "${GRN}${B}NORMAL${R}" ;;
-    INSERT)        printf '%s\n' "${CYN}${B}INSERT${R}" ;;
-    VISUAL*)       printf '%s\n' "${MAG}${B}${vim}${R}" ;;
-    "")            printf '%s\n' "${D}(vim off)${R}" ;;
-    *)             printf '%s\n' "${B}${vim}${R}" ;;
+    NORMAL)        vim_str="${GRN}${B}NORMAL${R}" ;;
+    INSERT)        vim_str="${CYN}${B}INSERT${R}" ;;
+    VISUAL*)       vim_str="${MAG}${B}${vim}${R}" ;;
+    "")            vim_str="${D}(vim off)${R}" ;;
+    *)             vim_str="${B}${vim}${R}" ;;
 esac
 
 model=$(q '.model.id')
@@ -24,7 +24,7 @@ effort=$(q '.effort.level')
 fast=$(q '.fast_mode')
 pct=$(q '.context_window.used_percentage')
 
-line2="${BLU}${model:-?}${R}"
+line2="${vim_str} ${D}·${R} ${BLU}${model:-?}${R}"
 
 if [ -n "$effort" ]; then
     case "$effort" in
@@ -128,6 +128,21 @@ self=$(q '.session_id')
 now=$(date +%s)
 line4=""
 agent_dir="$HOME/.claude/agent-status"
+
+# session_name (手動 /rename か AI 生成タイトル) は statusLine の JSON にしか
+# 来ない(hooks 側では取れない)ので、自分の agent-status ファイルへの反映はここで行う。
+# name_rank 3 として書き、hooks 側(cwd=1 / 冒頭メッセージ=2)に上書きされないようにする。
+self_name=$(q '.session_name')
+self_file="$agent_dir/$self.json"
+if [ -n "$self_name" ] && [ -f "$self_file" ]; then
+    self_rank=$(jq -r '.name_rank // 0' "$self_file" 2>/dev/null)
+    if [ "${self_rank:-0}" -lt 3 ]; then
+        tmp="$self_file.tmp.$$"
+        jq --arg n "$self_name" '.name = $n | .name_rank = 3' "$self_file" > "$tmp" 2>/dev/null \
+            && mv "$tmp" "$self_file"
+    fi
+fi
+
 if [ -d "$agent_dir" ]; then
     for f in "$agent_dir"/*.json; do
         [ -e "$f" ] || continue
@@ -144,13 +159,13 @@ if [ -d "$agent_dir" ]; then
         state=$(jq -r '.state // empty' "$f" 2>/dev/null)
         aname=$(jq -r '.name // "?"' "$f" 2>/dev/null)
         case "$state" in
-            processing)    c=$CYN; label=proc ;;
-            waiting_input) c=$YEL; label=wait ;;
-            done)          c=$GRN; label=done ;;
-            error)         c=$RED; label=err  ;;
+            processing)    c=$CYN; icon="●" ;;
+            waiting_input) c=$YEL; icon="◐" ;;
+            done)          c=$GRN; icon="✓" ;;
+            error)         c=$RED; icon="✗" ;;
             *)             continue ;;
         esac
-        line4="${line4}${line4:+   }${c}${B}${aname}${R}${D}:${label}${R}"
+        line4="${line4}${line4:+   }${c}${icon}${R} ${aname}"
     done
 fi
 if [ -n "$line4" ]; then
