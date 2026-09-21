@@ -101,10 +101,10 @@ volume "agent-state"
 
 | いつ | 何を | なぜそこか |
 | --- | --- | --- |
-| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
+| **ビルド時** `install.sh` (root) | volume のマウント先を用意、symlink（`~/.claude` `~/.codex` `~/.copilot` `~/.claude.json` `~/.config/gh`）、Claude Code / Copilot / herdr / Graphify の CLI、設定テンプレートと statusline スクリプトの配置、herdr の config.toml | コピーアップに乗せるにはビルド時でないといけない。Claude Code・Copilot・herdr・Graphify はどれも `~/.local/` に入る（volume の外）のでイメージに焼ける |
 | **起動ごと** `entrypoint.sh` (root) | 所有権の補正、claude/settings.json と copilot/settings.json へのテンプレートマージ、keybindings.json の symlink | どちらも volume の中。ビルド時に書くとコピーアップが起きる初回にしか届かない |
 | **作成後** `ensure-codex.sh` (remote user) | Codex CLI | 下記 |
-| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | lean / luna-shunt の marketplace 追加とインストール | プラグインは `~/.claude/plugins/`・`~/.codex/plugins/`(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
+| **作成後** `ensure-skills.sh` (remote user、`ensure-codex.sh` の後) | lean / luna-shunt の marketplace 追加とインストール、有効な `claude`/`codex`/`copilot` への Graphify スキル登録 | プラグインとスキルは `~/.claude/`・`~/.codex/`・`~/.copilot/` 配下(いずれも volume の中)へ書き込むため、CLI 本体と同じく volume マウント後でないと書けない |
 
 ### Codex だけ扱いが違う理由
 

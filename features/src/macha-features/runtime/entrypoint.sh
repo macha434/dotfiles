@@ -3,7 +3,7 @@
 set -eu
 
 # shellcheck source=/dev/null
-. /usr/local/share/macha-features/lib/common.sh
+. /usr/local/share/macha-features/lib/paths.sh
 # shellcheck source=/dev/null
 . "$SHARE/config"
 # shellcheck source=/dev/null

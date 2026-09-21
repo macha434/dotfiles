@@ -21,7 +21,7 @@ Personal configuration files, with an installer that detects the OS and places e
 ## Tech Stack
 
 - Language: Bash
-- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `keybindings.json`, `statusline-command.sh`), Codex CLI (`config.toml`), GitHub Copilot CLI (`settings.json`, `statusline-command.sh`), herdr (`config.toml`)
+- Covered tools: Visual Studio Code (`settings.json`, `keybindings.json`), Claude Code (`settings.json`, `keybindings.json`, `statusline-command.sh`, `agent-status.sh`), Codex CLI (`config.toml`), GitHub Copilot CLI (`settings.json`, `statusline-command.sh`), herdr (`config.toml`)
 
 ## Setup
 
@@ -83,7 +83,7 @@ Layout:
 | `lib/common.sh` | OS detection, Windows path resolution, `install_file`, logging |
 | `install.d/<name>.sh` | Installs one tool. The file name is the name accepted on the command line |
 | `vscode/` | VS Code's files themselves |
-| `claude/` | Claude Code's files themselves, including `settings.json` and the status line script |
+| `claude/` | Claude Code's files themselves, including `settings.json`, the status line script, and `agent-status.sh` (the hook script behind the status line's other-sessions display) |
 | `codex/` | Codex CLI's `config.toml`, kept in step with `claude/settings.json` |
 | `copilot/` | GitHub Copilot CLI's `settings.json` and status line script, kept in step with `claude/` |
 | `herdr/` | [herdr](https://herdr.dev)'s `config.toml`, left at defaults |
