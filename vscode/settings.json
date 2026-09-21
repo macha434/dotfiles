@@ -1,6 +1,6 @@
 {
     // ===== Dev Containers =====
-    "dev.containers.defaultFeatures":{
+    "dev.containers.defaultFeatures": {
         "ghcr.io/macha434/dotfiles/macha-features:latest": {
             "claude": true,
             "codex": false

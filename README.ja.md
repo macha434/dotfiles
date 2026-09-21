@@ -21,7 +21,7 @@
 ## 技術スタック
 
 - 言語: Bash
-- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`）、Codex CLI（`config.toml`）、GitHub Copilot CLI（`settings.json`、`statusline-command.sh`）、herdr（`config.toml`）
+- 対象ツール: Visual Studio Code（`settings.json`、`keybindings.json`）、Claude Code（`settings.json`、`keybindings.json`、`statusline-command.sh`、`agent-status.sh`）、Codex CLI（`config.toml`）、GitHub Copilot CLI（`settings.json`、`statusline-command.sh`）、herdr（`config.toml`）
 
 ## セットアップ
 
@@ -83,7 +83,7 @@ for f in install.sh lib/common.sh install.d/*.sh; do bash -n "$f"; done
 | `lib/common.sh` | OS 判別、Windows のパス解決、`install_file`、ログ出力 |
 | `install.d/<名前>.sh` | ツール1つ分の配置手順。ファイル名がコマンドラインで指定できる名前になる |
 | `vscode/` | VS Code の設定ファイルの実体 |
-| `claude/` | Claude Code の設定ファイルの実体。`settings.json` とステータスラインのスクリプトを含む |
+| `claude/` | Claude Code の設定ファイルの実体。`settings.json`・ステータスラインのスクリプト・`agent-status.sh`（ステータスラインの他セッション表示を支える hook スクリプト）を含む |
 | `codex/` | Codex CLI の `config.toml`。`claude/settings.json` と対になる内容にしている |
 | `copilot/` | GitHub Copilot CLI の `settings.json` とステータスラインのスクリプト。`claude/` と対になる内容にしている |
 | `herdr/` | [herdr](https://herdr.dev) の `config.toml`。既定値のまま |

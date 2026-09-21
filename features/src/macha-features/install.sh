@@ -14,8 +14,8 @@ declare -A HOME_REL=(
     [gh]=".config/gh"
 )
 
-# shellcheck source=lib/common.sh
-. "$SRC/lib/common.sh"
+# shellcheck source=lib/paths.sh
+. "$SRC/lib/paths.sh"
 # shellcheck source=lib/volume.sh
 . "$SRC/lib/volume.sh"
 # shellcheck source=lib/cli-install.sh
@@ -52,7 +52,7 @@ install -m 644 "$SRC/codex-skills.json"      "$SHARE/codex-skills.json"
 install -m 644 "$SRC/copilot-skills.json"    "$SHARE/copilot-skills.json"
 
 install -d "$SHARE/lib"
-install -m 644 "$SRC/lib/common.sh"   "$SHARE/lib/common.sh"
+install -m 644 "$SRC/lib/paths.sh"    "$SHARE/lib/paths.sh"
 install -m 644 "$SRC/lib/settings.sh" "$SHARE/lib/settings.sh"
 install -m 644 "$SRC/lib/skills.sh"   "$SHARE/lib/skills.sh"
 install -m 644 "$SRC/lib/graphify.sh" "$SHARE/lib/graphify.sh"
