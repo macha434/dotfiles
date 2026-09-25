@@ -21,10 +21,21 @@ Normal モードのみ:
 | キー | 動作 |
 | --- | --- |
 | `<space>r` | シンボルのリネーム |
-| `<space>d` | 定義へジャンプ |
+| `<space>d` | 参照検索 (`goToReferences`、peek 表示) |
+| `<space>D` | 参照検索 (`findReferences`、常駐パネル表示) |
 | `<space>t` | 型定義へジャンプ |
 | `<space>h` | ホバー表示 |
 | `<space>a` | Code Runner 実行 |
+| `<space>f` | 呼び出し階層 (`showCallHierarchy`、peek 表示) |
+| `<space>F` | 呼び出し階層 incoming (常駐パネル表示) |
+| `<space>e` | 次のエラー/警告へ (ファイル内) |
+| `<space>E` | 次のエラー/警告へ (ファイル横断) |
+
+Normal / Visual モード (VSCodeVim 組み込み、設定不要):
+
+| キー | 動作 |
+| --- | --- |
+| `gc` | 行コメントのトグル (`editor.action.commentLine`) |
 
 Insert モード:
 
@@ -119,6 +130,15 @@ Insert モード:
 | --- | --- |
 | `/` | 問題パネルのフィルタ欄へ (問題パネル表示中のみ) |
 | `/` | デバッグコンソールのフィルタへ (デバッグ REPL 内のみ) |
+
+## 診断 (Problems) peek 表示中
+
+`<space>e` / `<space>E` (marker.next / marker.nextInFiles) で開く peek 表示中のみ有効。
+
+| キー | 動作 |
+| --- | --- |
+| `n` | 次のエラー/警告へ |
+| `shift+n` | 前のエラー/警告へ |
 
 ## サイドバー (`ctrl+d`)
 
