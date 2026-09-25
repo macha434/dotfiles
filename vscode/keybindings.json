@@ -601,6 +601,24 @@
     },
 
     // ========================================================================
+    // 診断 (Problems) の peek 表示中のナビゲーション
+    //   vim 側の <space>e / <space>E (marker.next / marker.nextInFiles) で
+    //   開く peek ウィジェット表示中だけ、n / shift+n で次・前へ移動する。
+    //   markersNavigationVisible が立っている間だけ有効なので、
+    //   Normal モードの本来の n (検索の次候補) を通常時は奪わない。
+    // ========================================================================
+    {
+        "key": "n",
+        "command": "editor.action.marker.next",
+        "when": "editorTextFocus && markersNavigationVisible"
+    },
+    {
+        "key": "shift+n",
+        "command": "editor.action.marker.prev",
+        "when": "editorTextFocus && markersNavigationVisible"
+    },
+
+    // ========================================================================
     // その他 / 既定キーバインドの解除
     // ========================================================================
     {
